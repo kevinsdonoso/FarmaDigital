@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+
+  # 🚀 Backend .NET
+  farma-backend:
+    build:
+      context: ./FarmaDigitalBackend/FarmaDigitalBackend
+      dockerfile: Dockerfile
+    container_name: farma_backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ConnectionStrings__DefaultConnection: ${DOTNET_CONNECTION_STRING}
+
+  # 🐘 PostgreSQL
+  postgres:
+    image: postgres:16
+    container_name: postgres_farmaz
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # 🧠 pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_farmaz
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+volumes:
+  pg_data:

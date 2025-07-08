@@ -1,8 +1,20 @@
+# .NET
 bin/
 obj/
-.vs/
 *.user
+
+# Visual Studio / VSCode
+.vs/
+.vscode/
+
+# Docker y entorno
+.env
+pg_data/
+
+# Node.js / Next.js
 node_modules/
 .next/
-.env
-.vscode/
+
+# Otros
+*.log
+*.bak

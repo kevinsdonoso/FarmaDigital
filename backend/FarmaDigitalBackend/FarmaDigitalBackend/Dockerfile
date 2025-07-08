@@ -1,29 +1,25 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+﻿# See https://aka.ms/customizecontainer to learn how to customize your debug container
 
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
+# Base de ejecución (runtime)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-
-# This stage is used to build the service project
+# Etapa de compilación
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["FarmaDigitalBackend/FarmaDigitalBackend.csproj", "FarmaDigitalBackend/"]
-RUN dotnet restore "./FarmaDigitalBackend/FarmaDigitalBackend.csproj"
-COPY . .
-WORKDIR "/src/FarmaDigitalBackend"
-RUN dotnet build "./FarmaDigitalBackend.csproj" -c $BUILD_CONFIGURATION -o /app/build
+COPY FarmaDigitalBackend.csproj ./
+RUN dotnet restore "./FarmaDigitalBackend.csproj"
+COPY . ./
+RUN dotnet build "FarmaDigitalBackend.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# This stage is used to publish the service project to be copied to the final stage
+# Etapa de publicación
 FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./FarmaDigitalBackend.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "FarmaDigitalBackend.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
+# Imagen final
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
