@@ -1,62 +1,67 @@
 ﻿using FarmaDigitalBackend.Data;
+using FarmaDigitalBackend.DependyInjection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 📌 Cargar configuración por entorno (importante para Docker)
-builder.Configuration
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
-    .AddEnvironmentVariables();
-
-// ➕ Servicio de conexión a PostgreSQL
+// Configuración de base de datos PostgreSQL
 builder.Services.AddDbContext<FarmaDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ➕ Controladores con vistas (para MVC) + API REST
-builder.Services.AddControllersWithViews();
-builder.Services.AddControllers(); // Esto permite usar [ApiController]
+// Configuración de JWT (si la necesitas)
+var jwtKey = builder.Configuration["JwtSettings:Key"] ?? "tu-clave-secreta-muy-larga-y-segura-aqui";
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
 
-// ➕ Swagger para testeo de endpoints
+// Inyección de dependencias
+RepositoryIdentity.Inject(builder.Services);
+
+// Servicios necesarios
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ⚠️ Servicios de seguridad opcionales (AuthService, JWT, etc.)
-// ❌ Eliminar línea de configuración distribuida
-// try { builder.AddServiceDefaults(); } catch { }
+// CORS para desarrollo
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
-// 🌐 Swagger solo en desarrollo
+// Configuración del pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseCors("AllowAll");
 }
-else
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
+
+// Redirigir raíz a Swagger
+app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
-
-app.UseRouting();
-
-app.UseAuthentication(); // ← solo si implementas JWT o Identity
+app.UseAuthentication();
 app.UseAuthorization();
-
-// 👉 Rutas MVC por defecto
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-// 👉 Rutas para API REST
 app.MapControllers();
-
-// ❌ Eliminar línea que no compila
-// try { app.MapDefaultEndpoints(); } catch { }
 
 app.Run();
