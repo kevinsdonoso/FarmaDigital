@@ -25,11 +25,10 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
   };
 
   const handleEditSave = (formData) => {
-    if (editModal.producto) {
-      // Aquí llamarías a la función de editar que vendrá del componente padre
-      console.log('Editando producto:', { ...editModal.producto, ...formData });
+    if (editModal.producto && onEditProduct) {
+      // Llamar a la función de editar del componente padre
+      onEditProduct(editModal.producto.id_producto, formData);
       setEditModal({ isOpen: false, producto: null });
-      // El modal se cierra automáticamente, no necesitamos alert
     }
   };
 

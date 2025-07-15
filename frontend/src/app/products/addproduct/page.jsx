@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Package, Save, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Button } from '../../../../components/ui/Button';
 import { useAuth } from '../../../../hooks/useAuth';
+import { addProducto } from '../../../../lib/api';
 
 export default function AddProduct() {
   const router = useRouter();
@@ -55,33 +56,31 @@ export default function AddProduct() {
     setLoading(true);
 
     try {
-      // Simulamos la creación del producto
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const nuevoProducto = {
-        id_producto: Math.floor(Math.random() * 1000),
+      const productoData = {
         nombre: formData.nombre,
         descripcion: formData.descripcion,
-        precio: parseFloat(formData.precio),
-        stock: parseInt(formData.stock),
+        precio: formData.precio,
+        stock: formData.stock,
         categoria: formData.categoria,
         es_sensible: formData.es_sensible,
-        creado_por: authState.user.id_usuario,
-        creado_en: new Date().toISOString()
+        creado_por: authState.user?.id_usuario || null
       };
 
+      const nuevoProducto = await addProducto(productoData);
+      
       console.log('Producto creado:', nuevoProducto);
       alert('Producto agregado exitosamente!');
       router.push('/products');
       
     } catch (error) {
       console.error('Error al crear producto:', error);
-      alert('Error al crear el producto. Intenta nuevamente.');
+      alert('Error al crear el producto: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // ... resto del componente igual
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -238,10 +237,12 @@ export default function AddProduct() {
                 }`}
               >
                 <option value="">Selecciona una categoría</option>
-                <option value="Medicamentos">Medicamentos</option>
-                <option value="Vitaminas">Vitaminas</option>
-                <option value="Antibióticos">Antibióticos</option>
                 <option value="Analgésicos">Analgésicos</option>
+                <option value="Antiinflamatorios">Antiinflamatorios</option>
+                <option value="Antibióticos">Antibióticos</option>
+                <option value="Endocrinología">Endocrinología</option>
+                <option value="Cardiología">Cardiología</option>
+                <option value="Vitaminas">Vitaminas</option>
                 <option value="Cuidado Personal">Cuidado Personal</option>
                 <option value="Primeros Auxilios">Primeros Auxilios</option>
               </select>
