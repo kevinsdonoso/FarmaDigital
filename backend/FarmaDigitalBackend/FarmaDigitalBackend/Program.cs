@@ -32,7 +32,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // Inyección de dependencias
-RepositoryIdentity.Inject(builder.Services);
+RepositoryInjection.Inject(builder.Services);
 
 // Servicios necesarios
 builder.Services.AddControllers();

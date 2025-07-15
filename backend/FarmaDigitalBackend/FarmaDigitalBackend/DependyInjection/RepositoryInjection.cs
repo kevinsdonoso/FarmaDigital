@@ -5,14 +5,16 @@ using FarmaDigitalBackend.Service.Interface;
 
 namespace FarmaDigitalBackend.DependyInjection
 {
-    public static class RepositoryIdentity
+    public class RepositoryInjection
     {
         public static void Inject(IServiceCollection services)
         {
-            services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            services.AddScoped<IUsuarioService, UsuarioService>();
             services.AddScoped<IProductoRepository, ProductoRepository>();
             services.AddScoped<IProductoService, ProductoService>();
+            services.AddScoped<IOrdenRepository, OrdenRepository>();
+            services.AddScoped<IOrdenService, OrdenService>();
             services.AddScoped<ICarritoRepository, CarritoRepository>();
             services.AddScoped<ICarritoService, CarritoService>();
             services.AddScoped<IItemCarritoRepository, ItemCarritoRepository>();

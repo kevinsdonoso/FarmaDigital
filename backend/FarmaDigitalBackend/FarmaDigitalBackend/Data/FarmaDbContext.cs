@@ -16,6 +16,7 @@ namespace FarmaDigitalBackend.Data
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Rol> Roles { get; set; }
         public DbSet<Producto> Productos { get; set; }
+        public DbSet<Orden> Ordenes { get; set; }
         public DbSet<Carrito> Carritos { get; set; }
         public DbSet<ItemCarrito> ItemsCarrito { get; set; }
         public DbSet<Tarjeta> Tarjetas { get; set; }
