@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
 {
-    public class LogAuditoria
+    public class Carrito
     {
         [Key]
-        [Column("id_log")]
+        [Column("id_carrito")]
         public int Id { get; set; }
 
         [Required]
@@ -17,19 +18,13 @@ namespace FarmaDigitalBackend.Models
 
         public Usuario Usuario { get; set; }
 
-        [Required]
-        [MaxLength(100)]
-        [Column("accion")]
-        public string Accion { get; set; }
-
-        [Column("descripcion")]
-        public string Descripcion { get; set; }
-
-        [MaxLength(50)]
-        [Column("direccion_ip")]
-        public string DireccionIp { get; set; }
+        [Column("activo")]
+        public bool Activo { get; set; } = true;
 
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
+
+        public ICollection<ItemCarrito> ItemsCarrito { get; set; }
+        public ICollection<Orden> Ordenes { get; set; }
     }
 }

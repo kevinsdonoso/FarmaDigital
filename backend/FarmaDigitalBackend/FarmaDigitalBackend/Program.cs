@@ -1,7 +1,11 @@
 ﻿using FarmaDigitalBackend.Data;
 using FarmaDigitalBackend.DependyInjection;
-using Microsoft.EntityFrameworkCore;
+using FarmaDigitalBackend.Repositories;
+using FarmaDigitalBackend.Repositories.Interfaces;
+using FarmaDigitalBackend.Service;
+using FarmaDigitalBackend.Service.Interface;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
