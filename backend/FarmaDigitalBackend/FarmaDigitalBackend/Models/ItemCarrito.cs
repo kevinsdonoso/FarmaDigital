@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
 {
+    [Table("items_carrito")]
     public class ItemCarrito
     {
         [Key]
@@ -10,20 +11,22 @@ namespace FarmaDigitalBackend.Models
         public int Id { get; set; }
 
         [Required]
-        [ForeignKey("Carrito")]
         [Column("id_carrito")]
         public int IdCarrito { get; set; }
-        public Carrito Carrito { get; set; }
 
         [Required]
-        [ForeignKey("Producto")]
         [Column("id_producto")]
         public int IdProducto { get; set; }
-        public Producto Producto { get; set; }
 
         [Required]
-        [Range(1, int.MaxValue)]
         [Column("cantidad")]
         public int Cantidad { get; set; }
+
+        // Propiedades de navegación
+        [ForeignKey("IdCarrito")]
+        public virtual Carrito Carrito { get; set; } = null!;
+
+        [ForeignKey("IdProducto")]
+        public virtual Producto Producto { get; set; } = null!;
     }
 }

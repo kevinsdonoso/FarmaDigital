@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
 {
-    [Table("productos")] 
+    [Table("productos")]
     public class Producto
     {
         [Key]
@@ -39,12 +39,16 @@ namespace FarmaDigitalBackend.Models
         public int? CreadoPorId { get; set; }
 
         [Column("creado_en")]
-        public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
+        public DateTime CreadoEn { get; set; } = DateTime.UtcNow; // ← CAMBIAR A UTC
+
+        [Column("activo")]
+        public bool Activo { get; set; } = true;
 
         // Relaciones
         [ForeignKey("CreadoPorId")]
         public virtual Usuario? UsuarioCreador { get; set; }
-        public virtual ICollection<ItemCarrito>? ItemsCarrito { get; set; }
-        public virtual ICollection<DetalleFactura>? DetallesFactura { get; set; }
+        
+        public virtual ICollection<ItemCarrito> ItemsCarrito { get; set; } = new List<ItemCarrito>();
+        public virtual ICollection<DetalleFactura> DetallesFactura { get; set; } = new List<DetalleFactura>();
     }
 }

@@ -65,5 +65,15 @@ namespace FarmaDigitalBackend.Repositories
                 .Where(p => p.EsSensible == true)
                 .ToListAsync();
         }
+
+        public async Task LimpiarCarritosAsync(int productoId)
+        {
+            var itemsCarrito = await _context.ItemsCarrito
+                .Where(ic => ic.IdProducto == productoId)
+                .ToListAsync();
+            
+            _context.ItemsCarrito.RemoveRange(itemsCarrito);
+            await _context.SaveChangesAsync();
+        }
     }
 }

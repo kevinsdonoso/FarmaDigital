@@ -11,5 +11,6 @@ namespace FarmaDigitalBackend.Repositories.Interfaces
         Task<bool> DeleteAsync(int id);
         Task<List<Producto>> GetByCategoriaAsync(string categoria);
         Task<List<Producto>> GetProductosSensiblesAsync();
+        Task LimpiarCarritosAsync(int productoId);
     }
 }
