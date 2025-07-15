@@ -1,4 +1,6 @@
-﻿using FarmaDigitalBackend.Models;
+﻿/* 
+// Comentado temporalmente - Controller de auditoría
+using FarmaDigitalBackend.Models;
 using FarmaDigitalBackend.Service.Interface;
 using Microsoft.AspNetCore.Mvc;
 
@@ -43,3 +45,5 @@ namespace FarmaDigitalBackend.Controllers
         }
     }
 }
+
+}*/

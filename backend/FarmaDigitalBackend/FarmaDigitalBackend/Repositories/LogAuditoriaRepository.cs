@@ -1,4 +1,4 @@
-﻿using FarmaDigitalBackend.Data;
+﻿/*using FarmaDigitalBackend.Data;
 using FarmaDigitalBackend.Models;
 using FarmaDigitalBackend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -42,3 +42,4 @@ namespace FarmaDigitalBackend.Repositories
         }
     }
 }
+*/

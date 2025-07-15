@@ -41,6 +41,6 @@ namespace FarmaDigitalBackend.Models
         public ICollection<Tarjeta> Tarjetas { get; set; }
         public ICollection<Carrito> Carritos { get; set; }
         public ICollection<Orden> Ordenes { get; set; }
-        public ICollection<LogAuditoria> LogsAuditoria { get; set; }
+        /*public ICollection<LogAuditoria> LogsAuditoria { get; set; }*/
     }
 }

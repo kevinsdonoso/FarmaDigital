@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿/*using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
@@ -20,3 +20,4 @@ namespace FarmaDigitalBackend.Models
         public string Ip { get; set; }
     }
 }
+*/

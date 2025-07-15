@@ -6,8 +6,10 @@ namespace FarmaDigitalBackend.Service.Interface
     {
         Task<List<Producto>> ObtenerTodosAsync();
         Task<Producto?> ObtenerPorIdAsync(int id);
-        Task CrearAsync(Producto producto);
-        Task ActualizarAsync(Producto producto);
-        Task EliminarAsync(int id);
+        Task<Producto> CrearAsync(Producto producto);
+        Task<Producto> ActualizarAsync(Producto producto);
+        Task<bool> EliminarAsync(int id);
+        Task<List<Producto>> ObtenerPorCategoriaAsync(string categoria);
+        Task<List<Producto>> ObtenerProductosSensiblesAsync();
     }
 }

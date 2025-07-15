@@ -28,26 +28,42 @@ namespace FarmaDigitalBackend.Repositories
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        public async Task AddAsync(Producto producto)
+        public async Task<Producto> CreateAsync(Producto producto)
         {
-            await _context.Productos.AddAsync(producto);
+            _context.Productos.Add(producto);
             await _context.SaveChangesAsync();
+            return producto;
         }
 
-        public async Task UpdateAsync(Producto producto)
+        public async Task<Producto> UpdateAsync(Producto producto)
         {
             _context.Productos.Update(producto);
             await _context.SaveChangesAsync();
+            return producto;
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
-            var producto = await GetByIdAsync(id);
-            if (producto != null)
-            {
-                _context.Productos.Remove(producto);
-                await _context.SaveChangesAsync();
-            }
+            var producto = await _context.Productos.FindAsync(id);
+            if (producto == null) return false;
+
+            _context.Productos.Remove(producto);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<List<Producto>> GetByCategoriaAsync(string categoria)
+        {
+            return await _context.Productos
+                .Where(p => p.Categoria == categoria)
+                .ToListAsync();
+        }
+
+        public async Task<List<Producto>> GetProductosSensiblesAsync()
+        {
+            return await _context.Productos
+                .Where(p => p.EsSensible == true)
+                .ToListAsync();
         }
     }
 }
