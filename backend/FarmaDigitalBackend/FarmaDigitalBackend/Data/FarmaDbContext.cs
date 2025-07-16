@@ -23,10 +23,11 @@ namespace FarmaDigitalBackend.Data
         public DbSet<IntentoLogin> IntentosLogin { get; set; }
         public DbSet<LogAuditoria> LogsAuditoria { get; set; }
         public DbSet<AlertaSeguridad> AlertasSeguridad { get; set; }
+        public DbSet<TwoFactorAuth> TwoFactorAuths { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder); // Si usas Identity, aquí se incluye
+            base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Usuario>()
                 .HasIndex(u => u.Correo)
@@ -35,6 +36,12 @@ namespace FarmaDigitalBackend.Data
             modelBuilder.Entity<Tarjeta>()
                 .HasIndex(t => t.TokenTarjeta)
                 .IsUnique();
+
+            // Configuración para TwoFactorAuth
+            modelBuilder.Entity<TwoFactorAuth>()
+                .HasOne(t => t.Usuario)
+                .WithOne()
+                .HasForeignKey<TwoFactorAuth>(t => t.IdUsuario);
         }
     }
 }

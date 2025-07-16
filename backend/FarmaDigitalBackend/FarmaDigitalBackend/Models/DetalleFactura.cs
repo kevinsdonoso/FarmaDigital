@@ -6,20 +6,34 @@ namespace FarmaDigitalBackend.Models
     public class DetalleFactura
     {
         [Key]
-        public int Id { get; set; }
+        [Column("id_detalle_factura")]
+        public int IdDetalleFactura { get; set; }
 
-        [ForeignKey("Factura")]
+        [Required]
+        [Column("id_factura")]
         public int IdFactura { get; set; }
-        public Factura Factura { get; set; }
 
-        [ForeignKey("Producto")]
+        [Required]
+        [Column("id_producto")]
         public int IdProducto { get; set; }
-        public Producto Producto { get; set; }
 
-        [Range(1, int.MaxValue)]
+        [Required]
+        [Column("cantidad")]
         public int Cantidad { get; set; }
 
-        [Range(0, double.MaxValue)]
+        [Required]
+        [Column("precio_unitario", TypeName = "decimal(10,2)")]
+        public decimal PrecioUnitario { get; set; }
+
+        [Required]
+        [Column("subtotal", TypeName = "decimal(10,2)")]
         public decimal Subtotal { get; set; }
+
+        // Navegación
+        [ForeignKey("IdFactura")]
+        public Factura Factura { get; set; }
+
+        [ForeignKey("IdProducto")]
+        public Producto Producto { get; set; }
     }
 }

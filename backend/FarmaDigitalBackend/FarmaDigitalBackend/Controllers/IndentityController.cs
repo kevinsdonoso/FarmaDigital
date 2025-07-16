@@ -1,5 +1,5 @@
 ﻿using FarmaDigitalBackend.Models;
-using FarmaDigitalBackend.Service.Interface;
+using FarmaDigitalBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FarmaDigitalBackend.Controllers
@@ -15,24 +15,10 @@ namespace FarmaDigitalBackend.Controllers
             _userService = userService;
         }
 
-        [HttpGet("users")]
-        public async Task<ActionResult<List<Usuario>>> GetAllUsers()
-        {
-            try
-            {
-                var usuarios = await _userService.GetAllUsersAsync();
-                return Ok(usuarios);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Status = "Error interno del servidor", Error = ex.Message });
-            }
-        }
-
         [HttpGet("user")]
-        public async Task<Usuario?> GetUserByDni([FromQuery] string dni)
+        public async Task<Usuario?> GetUserByDni([FromQuery] string dni)  // ← Cambié "Dni" por "dni"
         {
-            return await _userService.GetUserByDni(dni);
+            return await _userService.GetUserByDni(dni);  // ← Ahora coincide
         }
     }
 }

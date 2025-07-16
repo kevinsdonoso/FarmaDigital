@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using FarmaDigitalBackend.Models;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
@@ -6,20 +7,38 @@ namespace FarmaDigitalBackend.Models
     public class AlertaSeguridad
     {
         [Key]
-        public int Id { get; set; }
+        [Column("id_alerta")]
+        public int IdAlerta { get; set; }
 
-        [ForeignKey("Usuario")]
-        public int IdUsuario { get; set; }
-        public Usuario Usuario { get; set; }
-
-        public DateTime Fecha { get; set; } = DateTime.UtcNow;
-
+        [Required]
+        [MaxLength(100)]
+        [Column("tipo_alerta")]
         public string TipoAlerta { get; set; }
 
+        [Required]
+        [Column("descripcion")]
         public string Descripcion { get; set; }
 
-        [MaxLength(10)]
-        public string NivelSeveridad { get; set; } = "medio"; // bajo, medio, alto
+        [Column("id_usuario")]
+        public int? IdUsuario { get; set; }
+
+        [MaxLength(50)]
+        [Column("direccion_ip")]
+        public string DireccionIp { get; set; }
+
+        [MaxLength(20)]
+        [Column("nivel_riesgo")]
+        public string NivelRiesgo { get; set; } = "medio";
+
+        [Column("resuelta")]
+        public bool Resuelta { get; set; } = false;
+
+        [Column("fecha_creacion")]
+        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+
+        // Navegación
+        [ForeignKey("IdUsuario")]
+        public Usuario Usuario { get; set; }
     }
 
 }

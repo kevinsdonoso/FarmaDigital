@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
@@ -7,30 +6,46 @@ namespace FarmaDigitalBackend.Models
     public class Usuario
     {
         [Key]
-        public int Id { get; set; }
+        [Column("id_usuario")]
+        public int IdUsuario { get; set; }
 
         [Required]
-        [MaxLength(10)]
+        [MaxLength(20)]
+        [Column("dni")]
         public string Dni { get; set; }
 
         [Required]
         [MaxLength(100)]
+        [Column("nombre")]
         public string Nombre { get; set; }
 
         [Required]
         [MaxLength(100)]
+        [Column("correo")]
         public string Correo { get; set; }
 
         [Required]
-        public string ContrasenaHash { get; set; }
+        [Column("password_hash")]
+        public string PasswordHash { get; set; }
 
+        [Column("id_rol")]
+        public int IdRol { get; set; }
+
+        [Column("mfa_activado")]
         public bool MfaActivado { get; set; } = false;
 
-        [ForeignKey("Rol")]
-        public int IdRol { get; set; }
-        public Rol Rol { get; set; }
+        [Column("creado_en")]
+        public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
-        public ICollection<Factura> Facturas { get; set; }
-        public ICollection<Tarjeta> Tarjetas { get; set; }
+        // Navegación
+        [ForeignKey("IdRol")]
+        public Rol Rol { get; set; }
+        
+        // Solo agrega estas si realmente tienes esas entidades
+        public ICollection<Producto>? Productos { get; set; }
+        public ICollection<Carrito>? Carritos { get; set; }
+        public ICollection<Orden>? Ordenes { get; set; }
+        public ICollection<Factura>? Facturas { get; set; }
+        public ICollection<LogAuditoria>? LogsAuditoria { get; set; }
     }
 }
