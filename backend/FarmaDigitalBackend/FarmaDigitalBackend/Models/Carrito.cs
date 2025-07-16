@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using FarmaDigitalBackend.Models;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
 namespace FarmaDigitalBackend.Models
 {
@@ -9,10 +8,8 @@ namespace FarmaDigitalBackend.Models
     {
         [Key]
         [Column("id_carrito")]
-        public int Id { get; set; }
+        public int IdCarrito { get; set; }
 
-        [Required]
-        [ForeignKey("Usuario")]
         [Column("id_usuario")]
         public int IdUsuario { get; set; }
 
@@ -22,9 +19,10 @@ namespace FarmaDigitalBackend.Models
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
-        // Relaciones
+        // Navegación
+        [ForeignKey("IdUsuario")]
         public Usuario Usuario { get; set; }
-        public virtual ICollection<ItemCarrito> ItemsCarrito { get; set; }
-        public virtual ICollection<Orden> Ordenes { get; set; }
+        public ICollection<ItemCarrito> ItemsCarrito { get; set; }
+        public ICollection<Orden> Ordenes { get; set; }
     }
 }

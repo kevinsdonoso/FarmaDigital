@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
@@ -9,7 +7,12 @@ namespace FarmaDigitalBackend.Models
     {
         [Key]
         [Column("id_usuario")]
-        public int Id { get; set; }
+        public int IdUsuario { get; set; }
+
+        [Required]
+        [MaxLength(20)]
+        [Column("dni")]
+        public string Dni { get; set; }
 
         [Required]
         [MaxLength(100)]
@@ -23,9 +26,8 @@ namespace FarmaDigitalBackend.Models
 
         [Required]
         [Column("password_hash")]
-        public string ContrasenaHash { get; set; }
+        public string PasswordHash { get; set; }
 
-        [ForeignKey("Rol")]
         [Column("id_rol")]
         public int IdRol { get; set; }
 
@@ -35,11 +37,15 @@ namespace FarmaDigitalBackend.Models
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
-        // Relaciones
+        // Navegación
+        [ForeignKey("IdRol")]
         public Rol Rol { get; set; }
-        public virtual ICollection<Factura> Facturas { get; set; }
-        public virtual ICollection<Carrito> Carritos { get; set; }
-        public virtual ICollection<Orden> Ordenes { get; set; }
-        public virtual ICollection<LogAuditoria> LogsAuditoria { get; set; }
+        
+        // Solo agrega estas si realmente tienes esas entidades
+        public ICollection<Producto>? Productos { get; set; }
+        public ICollection<Carrito>? Carritos { get; set; }
+        public ICollection<Orden>? Ordenes { get; set; }
+        public ICollection<Factura>? Facturas { get; set; }
+        public ICollection<LogAuditoria>? LogsAuditoria { get; set; }
     }
 }

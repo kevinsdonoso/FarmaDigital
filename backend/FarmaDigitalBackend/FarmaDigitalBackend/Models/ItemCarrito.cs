@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
 namespace FarmaDigitalBackend.Models
 {
@@ -7,25 +7,23 @@ namespace FarmaDigitalBackend.Models
     {
         [Key]
         [Column("id_item_carrito")]
-        public int Id { get; set; }
+        public int IdItemCarrito { get; set; }
 
-        [Required]
-        [ForeignKey("Carrito")]
         [Column("id_carrito")]
         public int IdCarrito { get; set; }
 
-        [Required]
-        [ForeignKey("Producto")]
         [Column("id_producto")]
         public int IdProducto { get; set; }
 
         [Required]
-        [Range(1, int.MaxValue)]
         [Column("cantidad")]
         public int Cantidad { get; set; }
 
-        // Relaciones
-        public virtual Carrito Carrito { get; set; } = null!;
-        public virtual Producto Producto { get; set; } = null!;
+        // Navegación
+        [ForeignKey("IdCarrito")]
+        public Carrito Carrito { get; set; }
+
+        [ForeignKey("IdProducto")]
+        public Producto Producto { get; set; }
     }
 }

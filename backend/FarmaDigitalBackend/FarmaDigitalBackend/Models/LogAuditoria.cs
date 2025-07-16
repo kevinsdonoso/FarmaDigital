@@ -1,4 +1,4 @@
-﻿using System;
+﻿using FarmaDigitalBackend.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -8,14 +8,11 @@ namespace FarmaDigitalBackend.Models
     {
         [Key]
         [Column("id_log")]
-        public int Id { get; set; }
+        public int IdLog { get; set; }
 
-        [Required]
-        [ForeignKey("Usuario")]
         [Column("id_usuario")]
-        public int IdUsuario { get; set; }
+        public int? IdUsuario { get; set; }
 
-        [Required]
         [MaxLength(100)]
         [Column("accion")]
         public string Accion { get; set; }
@@ -30,7 +27,9 @@ namespace FarmaDigitalBackend.Models
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
-        // Relaciones
+        // Navegación
+        [ForeignKey("IdUsuario")]
         public Usuario Usuario { get; set; }
     }
+
 }

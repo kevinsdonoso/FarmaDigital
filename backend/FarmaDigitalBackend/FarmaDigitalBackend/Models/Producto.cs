@@ -1,4 +1,4 @@
-﻿using System;
+﻿using FarmaDigitalBackend.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -8,24 +8,22 @@ namespace FarmaDigitalBackend.Models
     {
         [Key]
         [Column("id_producto")]
-        public int Id { get; set; }
+        public int IdProducto { get; set; }
 
         [Required]
         [MaxLength(100)]
         [Column("nombre")]
-        public string Nombre { get; set; } = string.Empty;
+        public string Nombre { get; set; }
 
         [Column("descripcion")]
         public string Descripcion { get; set; }
 
         [Required]
-        [Column("precio")]
-        [Range(0, 9999.99)]
+        [Column("precio", TypeName = "decimal(10,2)")]
         public decimal Precio { get; set; }
 
         [Required]
         [Column("stock")]
-        [Range(0, int.MaxValue)]
         public int Stock { get; set; }
 
         [Column("es_sensible")]
@@ -34,21 +32,18 @@ namespace FarmaDigitalBackend.Models
         [Required]
         [MaxLength(50)]
         [Column("categoria")]
-        public string Categoria { get; set; } = string.Empty;
+        public string Categoria { get; set; }
 
-        [ForeignKey("UsuarioCreador")]
         [Column("creado_por")]
-        public int? CreadoPorId { get; set; }
+        public int CreadoPor { get; set; }
 
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
-        [Column("activo")]
-        public bool Activo { get; set; } = true;
-
-        // Relaciones
-        public Usuario UsuarioCreador { get; set; }
-        public virtual ICollection<ItemCarrito> ItemsCarrito { get; set; } = new List<ItemCarrito>();
-        public virtual ICollection<DetalleFactura> DetallesFactura { get; set; } = new List<DetalleFactura>();
+        // Navegación
+        [ForeignKey("CreadoPor")]
+        public Usuario Usuario { get; set; }
+        public ICollection<ItemCarrito> ItemsCarrito { get; set; }
+        public ICollection<DetalleFactura> DetallesFactura { get; set; }
     }
 }
