@@ -13,12 +13,10 @@ namespace FarmaDigitalBackend.Models
         [ForeignKey("Usuario")]
         [Column("id_usuario")]
         public int IdUsuario { get; set; }
-        public Usuario Usuario { get; set; }
 
         [ForeignKey("Carrito")]
         [Column("id_carrito")]
         public int? IdCarrito { get; set; }
-        public Carrito Carrito { get; set; }
 
         [Column("total")]
         public decimal Total { get; set; }
@@ -32,6 +30,9 @@ namespace FarmaDigitalBackend.Models
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
-        public ICollection<Factura> Facturas { get; set; }
+        // Relaciones
+        public Usuario Usuario { get; set; }
+        public Carrito Carrito { get; set; }
+        public virtual ICollection<Factura> Facturas { get; set; }
     }
 }

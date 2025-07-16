@@ -14,7 +14,7 @@ namespace FarmaDigitalBackend.Models
         [Column("nombre_rol")]
         public string NombreRol { get; set; }
 
-        // Relación con usuarios (1 Rol → N Usuarios)
-        public ICollection<Usuario> Usuarios { get; set; }
+        // Relaciones
+        public virtual ICollection<Usuario> Usuarios { get; set; }
     }
 }

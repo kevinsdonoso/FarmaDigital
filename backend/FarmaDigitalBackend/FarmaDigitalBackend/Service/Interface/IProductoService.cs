@@ -1,4 +1,6 @@
 ﻿using FarmaDigitalBackend.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace FarmaDigitalBackend.Service.Interface
 {

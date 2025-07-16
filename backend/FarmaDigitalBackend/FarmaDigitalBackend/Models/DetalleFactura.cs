@@ -13,13 +13,11 @@ namespace FarmaDigitalBackend.Models
         [ForeignKey("Factura")]
         [Column("id_factura")]
         public int IdFactura { get; set; }
-        public Factura Factura { get; set; }
 
         [Required]
         [ForeignKey("Producto")]
         [Column("id_producto")]
         public int IdProducto { get; set; }
-        public Producto Producto { get; set; }
 
         [Required]
         [Column("cantidad")]
@@ -33,5 +31,9 @@ namespace FarmaDigitalBackend.Models
         [Required]
         [Column("subtotal")]
         public decimal Subtotal { get; set; }
+
+        // Relaciones
+        public Factura Factura { get; set; }
+        public Producto Producto { get; set; }
     }
 }

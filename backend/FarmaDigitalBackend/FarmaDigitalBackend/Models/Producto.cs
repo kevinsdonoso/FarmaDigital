@@ -4,7 +4,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
 {
-    [Table("productos")]
     public class Producto
     {
         [Key]
@@ -17,14 +16,16 @@ namespace FarmaDigitalBackend.Models
         public string Nombre { get; set; } = string.Empty;
 
         [Column("descripcion")]
-        public string? Descripcion { get; set; }
+        public string Descripcion { get; set; }
 
         [Required]
         [Column("precio")]
+        [Range(0, 9999.99)]
         public decimal Precio { get; set; }
 
         [Required]
         [Column("stock")]
+        [Range(0, int.MaxValue)]
         public int Stock { get; set; }
 
         [Column("es_sensible")]
@@ -35,19 +36,18 @@ namespace FarmaDigitalBackend.Models
         [Column("categoria")]
         public string Categoria { get; set; } = string.Empty;
 
+        [ForeignKey("UsuarioCreador")]
         [Column("creado_por")]
         public int? CreadoPorId { get; set; }
 
         [Column("creado_en")]
-        public DateTime CreadoEn { get; set; } = DateTime.UtcNow; // ← CAMBIAR A UTC
+        public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
         [Column("activo")]
         public bool Activo { get; set; } = true;
 
         // Relaciones
-        [ForeignKey("CreadoPorId")]
-        public virtual Usuario? UsuarioCreador { get; set; }
-        
+        public Usuario UsuarioCreador { get; set; }
         public virtual ICollection<ItemCarrito> ItemsCarrito { get; set; } = new List<ItemCarrito>();
         public virtual ICollection<DetalleFactura> DetallesFactura { get; set; } = new List<DetalleFactura>();
     }

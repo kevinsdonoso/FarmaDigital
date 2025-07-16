@@ -71,7 +71,7 @@ namespace FarmaDigitalBackend.Repositories
             var itemsCarrito = await _context.ItemsCarrito
                 .Where(ic => ic.IdProducto == productoId)
                 .ToListAsync();
-            
+
             _context.ItemsCarrito.RemoveRange(itemsCarrito);
             await _context.SaveChangesAsync();
         }

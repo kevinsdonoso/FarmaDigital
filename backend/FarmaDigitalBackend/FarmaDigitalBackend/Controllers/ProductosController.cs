@@ -29,9 +29,10 @@ namespace FarmaDigitalBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { 
+                return StatusCode(500, new
+                {
                     message = "Error interno del servidor",
-                    error = ex.Message 
+                    error = ex.Message
                 });
             }
         }
@@ -50,7 +51,7 @@ namespace FarmaDigitalBackend.Controllers
                     return BadRequest(new { message = "ID inválido" });
 
                 var producto = await _productoService.ObtenerPorIdAsync(id);
-                
+
                 if (producto == null)
                     return NotFound(new { message = $"Producto con ID {id} no encontrado" });
 
@@ -62,9 +63,10 @@ namespace FarmaDigitalBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { 
+                return StatusCode(500, new
+                {
                     message = "Error interno del servidor",
-                    error = ex.Message 
+                    error = ex.Message
                 });
             }
         }
@@ -83,10 +85,10 @@ namespace FarmaDigitalBackend.Controllers
                     return BadRequest(new { message = "Datos del producto son requeridos" });
 
                 var nuevoProducto = await _productoService.CrearAsync(producto);
-                
+
                 return CreatedAtAction(
-                    nameof(Get), 
-                    new { id = nuevoProducto.Id }, 
+                    nameof(Get),
+                    new { id = nuevoProducto.Id },
                     nuevoProducto
                 );
             }
@@ -96,9 +98,10 @@ namespace FarmaDigitalBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { 
+                return StatusCode(500, new
+                {
                     message = "Error interno del servidor",
-                    error = ex.Message 
+                    error = ex.Message
                 });
             }
         }
@@ -132,9 +135,10 @@ namespace FarmaDigitalBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { 
+                return StatusCode(500, new
+                {
                     message = "Error interno del servidor",
-                    error = ex.Message 
+                    error = ex.Message
                 });
             }
         }
@@ -145,35 +149,37 @@ namespace FarmaDigitalBackend.Controllers
         /// <param name="id">ID del producto</param>
         /// <returns>Resultado de la operación</returns>
         [HttpDelete("{id}")]
-public async Task<ActionResult> Delete(int id)
-{
-    try
-    {
-        if (id <= 0)
-            return BadRequest(new { message = "ID inválido" });
+        public async Task<ActionResult> Delete(int id)
+        {
+            try
+            {
+                if (id <= 0)
+                    return BadRequest(new { message = "ID inválido" });
 
-        var resultado = await _productoService.EliminarAsync(id);
-        
-        if (!resultado)
-            return NotFound(new { message = $"Producto con ID {id} no encontrado" });
+                var resultado = await _productoService.EliminarAsync(id);
 
-        return Ok(new { 
-            message = "Producto desactivado exitosamente",
-            info = "El producto ya no aparecerá en los listados pero se mantiene en el sistema"
-        });
-    }
-    catch (ArgumentException ex)
-    {
-        return BadRequest(new { message = ex.Message });
-    }
-    catch (Exception ex)
-    {
-        return StatusCode(500, new { 
-            message = "Error interno del servidor",
-            error = ex.Message 
-        });
-    }
-}
+                if (!resultado)
+                    return NotFound(new { message = $"Producto con ID {id} no encontrado" });
+
+                return Ok(new
+                {
+                    message = "Producto desactivado exitosamente",
+                    info = "El producto ya no aparecerá en los listados pero se mantiene en el sistema"
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Error interno del servidor",
+                    error = ex.Message
+                });
+            }
+        }
         /// <summary>
         /// Obtiene productos por categoría
         /// </summary>
@@ -196,9 +202,10 @@ public async Task<ActionResult> Delete(int id)
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { 
+                return StatusCode(500, new
+                {
                     message = "Error interno del servidor",
-                    error = ex.Message 
+                    error = ex.Message
                 });
             }
         }
@@ -217,9 +224,10 @@ public async Task<ActionResult> Delete(int id)
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { 
+                return StatusCode(500, new
+                {
                     message = "Error interno del servidor",
-                    error = ex.Message 
+                    error = ex.Message
                 });
             }
         }

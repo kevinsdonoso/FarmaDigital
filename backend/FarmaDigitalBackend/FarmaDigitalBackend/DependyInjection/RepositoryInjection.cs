@@ -23,8 +23,8 @@ namespace FarmaDigitalBackend.DependyInjection
             services.AddScoped<IFacturaService, FacturaService>();
             services.AddScoped<IDetalleFacturaRepository, DetalleFacturaRepository>();
             services.AddScoped<IDetalleFacturaService, DetalleFacturaService>();
-            // services.AddScoped<ILogAuditoriaRepository, LogAuditoriaRepository>(); // Comentado temporalmente
-            // services.AddScoped<ILogAuditoriaService, LogAuditoriaService>(); // Comentado temporalmente
+            services.AddScoped<ILogAuditoriaRepository, LogAuditoriaRepository>();
+            services.AddScoped<ILogAuditoriaService, LogAuditoriaService>();
         }
     }
 }

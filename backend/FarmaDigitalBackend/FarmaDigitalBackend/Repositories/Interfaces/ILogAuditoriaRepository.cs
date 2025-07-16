@@ -1,4 +1,4 @@
-﻿/*using FarmaDigitalBackend.Models;
+﻿using FarmaDigitalBackend.Models;
 
 namespace FarmaDigitalBackend.Repositories.Interfaces
 {
@@ -10,4 +10,3 @@ namespace FarmaDigitalBackend.Repositories.Interfaces
         Task AddAsync(LogAuditoria log);
     }
 }
-*/

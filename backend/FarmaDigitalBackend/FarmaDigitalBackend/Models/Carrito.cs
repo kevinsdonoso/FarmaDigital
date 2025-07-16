@@ -16,15 +16,15 @@ namespace FarmaDigitalBackend.Models
         [Column("id_usuario")]
         public int IdUsuario { get; set; }
 
-        public Usuario Usuario { get; set; }
-
         [Column("activo")]
         public bool Activo { get; set; } = true;
 
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
-        public ICollection<ItemCarrito> ItemsCarrito { get; set; }
-        public ICollection<Orden> Ordenes { get; set; }
+        // Relaciones
+        public Usuario Usuario { get; set; }
+        public virtual ICollection<ItemCarrito> ItemsCarrito { get; set; }
+        public virtual ICollection<Orden> Ordenes { get; set; }
     }
 }

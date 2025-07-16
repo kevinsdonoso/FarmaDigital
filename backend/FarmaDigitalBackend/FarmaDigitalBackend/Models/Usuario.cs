@@ -28,7 +28,6 @@ namespace FarmaDigitalBackend.Models
         [ForeignKey("Rol")]
         [Column("id_rol")]
         public int IdRol { get; set; }
-        public Rol Rol { get; set; }
 
         [Column("mfa_activado")]
         public bool MfaActivado { get; set; } = false;
@@ -37,10 +36,10 @@ namespace FarmaDigitalBackend.Models
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
         // Relaciones
-        public ICollection<Factura> Facturas { get; set; }
-        public ICollection<Tarjeta> Tarjetas { get; set; }
-        public ICollection<Carrito> Carritos { get; set; }
-        public ICollection<Orden> Ordenes { get; set; }
-        /*public ICollection<LogAuditoria> LogsAuditoria { get; set; }*/
+        public Rol Rol { get; set; }
+        public virtual ICollection<Factura> Facturas { get; set; }
+        public virtual ICollection<Carrito> Carritos { get; set; }
+        public virtual ICollection<Orden> Ordenes { get; set; }
+        public virtual ICollection<LogAuditoria> LogsAuditoria { get; set; }
     }
 }

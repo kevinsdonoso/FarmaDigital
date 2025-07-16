@@ -14,13 +14,11 @@ namespace FarmaDigitalBackend.Models
         [ForeignKey("Orden")]
         [Column("id_orden")]
         public int IdOrden { get; set; }
-        public Orden Orden { get; set; }
 
         [Required]
         [ForeignKey("Usuario")]
         [Column("id_usuario")]
         public int IdUsuario { get; set; }
-        public Usuario Usuario { get; set; }
 
         [Column("fecha_emision")]
         public DateTime FechaEmision { get; set; } = DateTime.UtcNow;
@@ -46,6 +44,9 @@ namespace FarmaDigitalBackend.Models
         [Column("estado_pago")]
         public string EstadoPago { get; set; } = "pendiente";
 
-        public ICollection<DetalleFactura> DetallesFactura { get; set; }
+        // Relaciones
+        public Orden Orden { get; set; }
+        public Usuario Usuario { get; set; }
+        public virtual ICollection<DetalleFactura> DetallesFactura { get; set; }
     }
 }
