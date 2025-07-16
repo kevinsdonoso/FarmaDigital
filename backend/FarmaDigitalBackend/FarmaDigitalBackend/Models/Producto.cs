@@ -29,7 +29,7 @@ namespace FarmaDigitalBackend.Models
         [Column("es_sensible")]
         public bool EsSensible { get; set; } = false;
 
-        [Column("activo")]
+        [Column("Activo")]
         public bool Activo { get; set; }
 
         [Required]
@@ -42,8 +42,6 @@ namespace FarmaDigitalBackend.Models
 
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
-
-        // Navegación
         [ForeignKey("CreadoPor")]
         public Usuario Usuario { get; set; }
         public ICollection<ItemCarrito> ItemsCarrito { get; set; }

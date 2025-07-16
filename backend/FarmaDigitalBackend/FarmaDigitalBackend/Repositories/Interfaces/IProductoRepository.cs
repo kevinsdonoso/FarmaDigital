@@ -4,13 +4,11 @@ namespace FarmaDigitalBackend.Repositories.Interfaces
 {
     public interface IProductoRepository
     {
-        Task<List<Producto>> GetAllAsync();
-        Task<Producto?> GetByIdAsync(int id);
-        Task<Producto> CreateAsync(Producto producto);
-        Task<Producto> UpdateAsync(Producto producto);
-        Task<bool> DeleteAsync(int id);
-        Task<List<Producto>> GetByCategoriaAsync(string categoria);
-        Task<List<Producto>> GetProductosSensiblesAsync();
-        Task LimpiarCarritosAsync(int productoId);
+        Task<List<Producto>> GetAllProducts();
+        Task<List<Producto>> GetProductsWithStock();
+        Task<Producto?> GetProductById(int id);
+        Task<Producto> CreateProduct(Producto producto);
+        Task<Producto?> UpdateProduct(int id, Producto producto);
+        Task<bool> SoftDeleteProduct(int id);
     }
 }

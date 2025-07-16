@@ -1,7 +1,7 @@
 ﻿using FarmaDigitalBackend.Repositories;
 using FarmaDigitalBackend.Repositories.Interfaces;
-using FarmaDigitalBackend.Services;           // ✅ AGREGAR para TwoFactorService
-using FarmaDigitalBackend.Services.Interfaces; // ✅ AGREGAR para ITwoFactorService
+using FarmaDigitalBackend.Services;
+using FarmaDigitalBackend.Services.Interfaces;
 
 namespace FarmaDigitalBackend.DependyInjection
 {
@@ -9,18 +9,16 @@ namespace FarmaDigitalBackend.DependyInjection
     {
         public static void Inject(IServiceCollection services)
         {
-            // Repositorios existentes
+            // Repositorios
             services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IUserService, UserService>();
-            
-            // Nuevos repositorios para autenticación
             services.AddScoped<ITwoFactorRepository, TwoFactorRepository>();
+            services.AddScoped<IProductoRepository, ProductoRepository>();
             
-            // Nuevos servicios para autenticación
+            // Servicios
+            services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<ITwoFactorService, TwoFactorService>(); // ✅ Ahora funcionará
-            
-            // IJwtService ya está registrado en Program.cs como Singleton
+            services.AddScoped<ITwoFactorService, TwoFactorService>();
+            services.AddScoped<IProductoService, ProductoService>();
         }
     }
 }

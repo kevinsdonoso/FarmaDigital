@@ -14,66 +14,61 @@ namespace FarmaDigitalBackend.Repositories
             _context = context;
         }
 
-        public async Task<List<Producto>> GetAllAsync()
+        public async Task<List<Producto>> GetAllProducts()
         {
             return await _context.Productos
-                .Include(p => p.CreadoPor)
+                .Where(p => p.Activo == true)
                 .ToListAsync();
         }
 
-        public async Task<Producto?> GetByIdAsync(int id)
+        public async Task<List<Producto>> GetProductsWithStock()
         {
             return await _context.Productos
-                .Include(p => p.CreadoPor)
-                .FirstOrDefaultAsync(p => p.IdProducto == id);
+                .Where(p => p.Activo == true && p.Stock > 0)
+                .ToListAsync();
         }
 
-        public async Task<Producto> CreateAsync(Producto producto)
+        public async Task<Producto?> GetProductById(int id)
+        {
+            return await _context.Productos
+                .FirstOrDefaultAsync(p => p.IdProducto == id && p.Activo == true);
+        }
+
+        public async Task<Producto> CreateProduct(Producto producto)
         {
             _context.Productos.Add(producto);
             await _context.SaveChangesAsync();
             return producto;
         }
 
-        public async Task<Producto> UpdateAsync(Producto producto)
+        public async Task<Producto?> UpdateProduct(int id, Producto producto)
         {
-            _context.Productos.Update(producto);
-            await _context.SaveChangesAsync();
-            return producto;
+            var existingProduct = await _context.Productos.FindAsync(id);
+            if (existingProduct != null && existingProduct.Activo)
+            {
+                existingProduct.Nombre = producto.Nombre;
+                existingProduct.Descripcion = producto.Descripcion;
+                existingProduct.Precio = producto.Precio;
+                existingProduct.Stock = producto.Stock;
+                existingProduct.EsSensible = producto.EsSensible;
+                existingProduct.Categoria = producto.Categoria;
+                
+                await _context.SaveChangesAsync();
+                return existingProduct;
+            }
+            return null;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> SoftDeleteProduct(int id)
         {
             var producto = await _context.Productos.FindAsync(id);
-            if (producto == null) return false;
-
-            _context.Productos.Remove(producto);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<List<Producto>> GetByCategoriaAsync(string categoria)
-        {
-            return await _context.Productos
-                .Where(p => p.Categoria == categoria)
-                .ToListAsync();
-        }
-
-        public async Task<List<Producto>> GetProductosSensiblesAsync()
-        {
-            return await _context.Productos
-                .Where(p => p.EsSensible == true)
-                .ToListAsync();
-        }
-
-        public async Task LimpiarCarritosAsync(int productoId)
-        {
-            var itemsCarrito = await _context.ItemsCarrito
-                .Where(ic => ic.IdProducto == productoId)
-                .ToListAsync();
-
-            _context.ItemsCarrito.RemoveRange(itemsCarrito);
-            await _context.SaveChangesAsync();
+            if (producto != null && producto.Activo)
+            {
+                producto.Activo = false;
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
         }
     }
 }
