@@ -29,6 +29,9 @@ namespace FarmaDigitalBackend.Models
         [Column("es_sensible")]
         public bool EsSensible { get; set; } = false;
 
+        [Column("activo")]
+        public bool Activo { get; set; }
+
         [Required]
         [MaxLength(50)]
         [Column("categoria")]

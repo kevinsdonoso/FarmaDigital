@@ -27,7 +27,7 @@ namespace FarmaDigitalBackend.Repositories
             return await _context.Ordenes
                 .Include(o => o.Usuario)
                 .Include(o => o.Carrito)
-                .FirstOrDefaultAsync(o => o.Id == id);
+                .FirstOrDefaultAsync(o => o.IdOrden == id);
         }
 
         public async Task AddAsync(Orden orden)

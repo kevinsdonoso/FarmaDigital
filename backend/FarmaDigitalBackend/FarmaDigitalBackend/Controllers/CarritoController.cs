@@ -42,13 +42,13 @@ namespace FarmaDigitalBackend.Controllers
         public async Task<IActionResult> Add([FromBody] Carrito carrito)
         {
             await _carritoService.AddAsync(carrito);
-            return CreatedAtAction(nameof(GetById), new { id = carrito.Id }, carrito);
+            return CreatedAtAction(nameof(GetById), new { id = carrito.IdCarrito }, carrito);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] Carrito carrito)
         {
-            if (id != carrito.Id)
+            if (id != carrito.IdCarrito)
                 return BadRequest();
             await _carritoService.UpdateAsync(carrito);
             return NoContent();

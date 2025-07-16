@@ -21,7 +21,7 @@ namespace FarmaDigitalBackend.Service
             try
             {
                 var productos = await _productoRepository.GetAllAsync();
-                return productos.Where(p => p.Activo).ToList(); // ← FILTRAR SOLO ACTIVOS
+                return productos.Where(p => p.EsSensible).ToList(); // ← FILTRAR SOLO ACTIVOS
             }
             catch (Exception ex)
             {
@@ -68,7 +68,7 @@ namespace FarmaDigitalBackend.Service
 
                 await _logAuditoriaService.AddAsync(new LogAuditoria
                 {
-                    IdUsuario = producto.CreadoPorId ?? 0, // por si es null
+                    
                     Accion = "CREAR_PRODUCTO",
                     Descripcion = $"Creado producto: {producto.Nombre}",
                     DireccionIp = "127.0.0.1" // Idealmente viene del contexto HTTP
@@ -90,17 +90,17 @@ namespace FarmaDigitalBackend.Service
                 // Validaciones de negocio
                 ValidarProducto(producto);
 
-                if (producto.Id <= 0)
+                if (producto.IdProducto <= 0)
                     throw new ArgumentException("El ID del producto es requerido");
 
                 // Verificar que el producto existe
-                var productoExistente = await _productoRepository.GetByIdAsync(producto.Id);
+                var productoExistente = await _productoRepository.GetByIdAsync(producto.IdProducto);
                 if (productoExistente == null)
                     throw new ArgumentException("Producto no encontrado");
 
                 // Verificar si ya existe otro producto con el mismo nombre
                 var productosExistentes = await _productoRepository.GetAllAsync();
-                if (productosExistentes.Any(p => p.Nombre.ToLower() == producto.Nombre.ToLower() && p.Id != producto.Id))
+                if (productosExistentes.Any(p => p.Nombre.ToLower() == producto.Nombre.ToLower() && p.IdProducto != producto.IdProducto))
                     throw new ArgumentException("Ya existe otro producto con ese nombre");
 
                 // ACTUALIZAR LOS CAMPOS DEL PRODUCTO EXISTENTE
@@ -123,36 +123,7 @@ namespace FarmaDigitalBackend.Service
                 throw new Exception($"Error al actualizar el producto: {ex.Message}", ex);
             }
         }
-        public async Task<bool> EliminarAsync(int id)
-        {
-            try
-            {
-                if (id <= 0)
-                    throw new ArgumentException("El ID debe ser mayor a 0");
-
-                // Obtener el producto
-                var producto = await _productoRepository.GetByIdAsync(id);
-                if (producto == null)
-                    throw new ArgumentException("Producto no encontrado");
-
-                // Verificar si ya está inactivo
-                if (!producto.Activo)
-                    throw new ArgumentException("El producto ya está desactivado");
-
-                // SOLO cambiar el estado a inactivo
-                producto.Activo = false;
-                await _productoRepository.UpdateAsync(producto);
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error al desactivar el producto: {ex.Message}", ex);
-            }
-        }
-
-        // Actualizar método para obtener solo productos activos
-
+       
         public async Task<List<Producto>> ObtenerPorCategoriaAsync(string categoria)
         {
             try

@@ -88,7 +88,7 @@ namespace FarmaDigitalBackend.Controllers
 
                 return CreatedAtAction(
                     nameof(Get),
-                    new { id = nuevoProducto.Id },
+                    new { id = nuevoProducto.IdProducto },
                     nuevoProducto
                 );
             }
@@ -123,7 +123,7 @@ namespace FarmaDigitalBackend.Controllers
                 if (producto == null)
                     return BadRequest(new { message = "Datos del producto son requeridos" });
 
-                if (id != producto.Id)
+                if (id != producto.IdProducto)
                     return BadRequest(new { message = "El ID del parámetro no coincide con el ID del producto" });
 
                 var productoActualizado = await _productoService.ActualizarAsync(producto);
@@ -143,43 +143,7 @@ namespace FarmaDigitalBackend.Controllers
             }
         }
 
-        /// <summary>
-        /// Elimina un producto
-        /// </summary>
-        /// <param name="id">ID del producto</param>
-        /// <returns>Resultado de la operación</returns>
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(int id)
-        {
-            try
-            {
-                if (id <= 0)
-                    return BadRequest(new { message = "ID inválido" });
-
-                var resultado = await _productoService.EliminarAsync(id);
-
-                if (!resultado)
-                    return NotFound(new { message = $"Producto con ID {id} no encontrado" });
-
-                return Ok(new
-                {
-                    message = "Producto desactivado exitosamente",
-                    info = "El producto ya no aparecerá en los listados pero se mantiene en el sistema"
-                });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    message = "Error interno del servidor",
-                    error = ex.Message
-                });
-            }
-        }
+      
         /// <summary>
         /// Obtiene productos por categoría
         /// </summary>

@@ -45,7 +45,7 @@ namespace FarmaDigitalBackend.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, DetalleFactura detalle)
         {
-            if (id != detalle.Id) return BadRequest();
+            if (id != detalle.IdDetalleFactura) return BadRequest();
             await _service.UpdateAsync(detalle);
             return NoContent();
         }

@@ -29,7 +29,7 @@ namespace FarmaDigitalBackend.Repositories
                 .Include(f => f.Usuario)
                 .Include(f => f.Orden)
                 .Include(f => f.DetallesFactura)
-                .FirstOrDefaultAsync(f => f.Id == id);
+                .FirstOrDefaultAsync(f => f.IdFactura == id);
         }
 
         public async Task<List<Factura>> GetByUsuarioIdAsync(int usuarioId)

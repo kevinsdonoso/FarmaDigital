@@ -17,15 +17,15 @@ namespace FarmaDigitalBackend.Repositories
         public async Task<List<Producto>> GetAllAsync()
         {
             return await _context.Productos
-                .Include(p => p.UsuarioCreador)
+                .Include(p => p.CreadoPor)
                 .ToListAsync();
         }
 
         public async Task<Producto?> GetByIdAsync(int id)
         {
             return await _context.Productos
-                .Include(p => p.UsuarioCreador)
-                .FirstOrDefaultAsync(p => p.Id == id);
+                .Include(p => p.CreadoPor)
+                .FirstOrDefaultAsync(p => p.IdProducto == id);
         }
 
         public async Task<Producto> CreateAsync(Producto producto)

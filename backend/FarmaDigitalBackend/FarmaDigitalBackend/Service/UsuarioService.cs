@@ -15,14 +15,12 @@ namespace FarmaDigitalBackend.Service
 
         public Task<List<Usuario>> GetAllAsync() => _repository.GetAllAsync();
 
-        public Task<Usuario?> GetByIdAsync(int id) => _repository.GetByIdAsync(id);
-
         public Task<Usuario?> GetByCorreoAsync(string correo) => _repository.GetByCorreoAsync(correo);
 
         public Task AddAsync(Usuario usuario) => _repository.AddAsync(usuario);
 
         public Task UpdateAsync(Usuario usuario) => _repository.UpdateAsync(usuario);
 
-        public Task DeleteAsync(int id) => _repository.DeleteAsync(id);
+
     }
 }

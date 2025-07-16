@@ -27,7 +27,7 @@ namespace FarmaDigitalBackend.Repositories
             return await _context.ItemsCarrito
                 .Include(i => i.Producto)
                 .Include(i => i.Carrito)
-                .FirstOrDefaultAsync(i => i.Id == id);
+                .FirstOrDefaultAsync(i => i.IdItemCarrito == id);
         }
 
         public async Task<List<ItemCarrito>> GetByCarritoIdAsync(int carritoId)

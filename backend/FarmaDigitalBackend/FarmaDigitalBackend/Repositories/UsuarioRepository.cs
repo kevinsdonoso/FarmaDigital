@@ -19,11 +19,6 @@ namespace FarmaDigitalBackend.Repositories
             return await _context.Usuarios.Include(u => u.Rol).ToListAsync();
         }
 
-        public async Task<Usuario?> GetByIdAsync(int id)
-        {
-            return await _context.Usuarios.Include(u => u.Rol)
-                .FirstOrDefaultAsync(u => u.Id == id);
-        }
 
         public async Task<Usuario?> GetByCorreoAsync(string correo)
         {
@@ -43,14 +38,6 @@ namespace FarmaDigitalBackend.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(int id)
-        {
-            var user = await GetByIdAsync(id);
-            if (user != null)
-            {
-                _context.Usuarios.Remove(user);
-                await _context.SaveChangesAsync();
-            }
-        }
+       
     }
 }

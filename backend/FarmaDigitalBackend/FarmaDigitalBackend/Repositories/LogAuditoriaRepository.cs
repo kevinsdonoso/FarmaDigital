@@ -25,7 +25,7 @@ namespace FarmaDigitalBackend.Repositories
         {
             return await _context.LogsAuditoria
                 .Include(l => l.Usuario)
-                .FirstOrDefaultAsync(l => l.Id == id);
+                .FirstOrDefaultAsync(l => l.IdLog == id);
         }
 
         public async Task<List<LogAuditoria>> GetByUsuarioAsync(int idUsuario)
