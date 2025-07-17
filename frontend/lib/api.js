@@ -1,159 +1,183 @@
 import { USE_FAKE_DATA, BASE_URL } from "./config";
-import {
-  fakeUsuarios,
-  fakeProductos,
-  fakeCarritos,
-  fakeItemsCarrito,
-  fakeOrdenes,
-  fakeFacturas,
-  fakeDetalleFactura,
-  fakeLogsAuditoria,
-} from "./fakeData";
 
-// Simula demora en ms
+export async function registerUser(userData) {
+  if (USE_FAKE_DATA) {
+    await delay(500);
+    return {
+      success: true,
+      message: 'Usuario registrado exitosamente'
+    };
+  }
+  
+  try {
+    console.log('Enviando datos al backend:', userData); // Debug
+    
+    const response = await fetch(`${BASE_URL}/api/Auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        dni: userData.dni,
+        nombre: userData.nombre,
+        correo: userData.correo,
+        password: userData.password
+      }),
+    });
+
+    console.log('Respuesta del servidor:', response); // Debug
+    console.log('Status:', response.status); // Debug
+    console.log('Status Text:', response.statusText); // Debug
+
+    const data = await response.json();
+    console.log('Datos de respuesta:', data); // Debug
+
+    if (!response.ok) {
+      throw new Error(data.error || data.message || data.Message || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    return {
+      success: true,
+      message: data.message || 'Usuario registrado exitosamente',
+      data: data
+    };
+  } catch (error) {
+    console.error('Error completo en registro:', error); // Debug
+    
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('Error de conexión. Verifica que el servidor esté funcionando.');
+    }
+    
+    throw error;
+  }
+}
+
+export async function loginUser(credentials) {
+  if (USE_FAKE_DATA) {
+    await delay(500);
+    
+    // Simular diferentes escenarios con QR dinámico
+    if (credentials.username === 'nuevo') {
+      // Simular QR único para este usuario
+      const fakeSecret = 'JBSWY3DPEHPK3PXP'; // Cambiaría por cada usuario
+      const fakeQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=otpauth%3A%2F%2Ftotp%2FFarmaDigital%3A${encodeURIComponent(credentials.username)}%3Fsecret%3D${fakeSecret}%26issuer%3DFarmaDigital`;
+      
+      return {
+        requires2FA: true,
+        qrCode: fakeQrUrl
+      };
+    } else if (credentials.username === 'existente') {
+      return {
+        requires2FA: true
+        // Sin qrCode porque ya está configurado
+      };
+    } else if (credentials.twoFactorCode) {
+      if (credentials.twoFactorCode === '123456') {
+        return {
+          success: true,
+          access_token: 'fake_token_123',
+          user_info: {
+            id_usuario: 1,
+            nombre: 'Usuario Fake',
+            correo: 'usuario@fake.com',
+            role: 'cliente'
+          }
+        };
+      } else {
+        throw new Error('Código 2FA inválido');
+      }
+    } else {
+      return {
+        success: true,
+        access_token: 'fake_token_123',
+        user_info: {
+          id_usuario: 1,
+          nombre: 'Usuario Fake',
+          correo: 'usuario@fake.com',
+          role: 'cliente'
+        }
+      };
+    }
+  }
+  
+  try {
+    console.log('Enviando credenciales al backend:', credentials);
+    
+    const requestBody = {
+      username: credentials.username,
+      password: credentials.password
+    };
+
+    if (credentials.twoFactorCode) {
+      requestBody.twoFactorCode = credentials.twoFactorCode;
+    }
+
+    const response = await fetch(`${BASE_URL}/api/Auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log('Respuesta del login:', response);
+    console.log('Status:', response.status);
+    console.log('OK:', response.ok);
+    
+    const data = await response.json();
+    console.log('Datos de respuesta del login:', data);
+
+    // ✅ FLUJO CORRECTO: Status 400 significa "Necesita 2FA"
+    if (response.status === 400) {
+      console.log('Status 400 - Requiere 2FA');
+      return {
+        success: false,
+        requires2FA: true,
+        qrCode: data.qrCode, // Solo si es primera vez
+        message: data.message || 'Requiere autenticación 2FA'
+      };
+    }
+
+    // ✅ FLUJO CORRECTO: Status 200 significa "Login exitoso"
+    if (response.status === 200) {
+      console.log('Status 200 - Login exitoso');
+      return {
+        success: true,
+        access_token: data.access_token || data.token || data.Token,
+        user_info: data.user_info || data.user || data.User,
+        requires2FA: false,
+        message: data.message || 'Login exitoso'
+      };
+    }
+
+    // Para otros status codes, lanzar error
+    if (!response.ok) {
+      throw new Error(data.error || data.message || data.Message || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    // Fallback (no debería llegar aquí)
+    return {
+      success: !data.requires2FA,
+      access_token: data.access_token || data.token || data.Token,
+      user_info: data.user_info || data.user || data.User,
+      requires2FA: data.requires2FA || data.requiresTwoFactor,
+      qrCode: data.qrCode,
+      message: data.message
+    };
+  } catch (error) {
+    console.error('Error completo en login:', error);
+    
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('Error de conexión. Verifica que el servidor esté funcionando.');
+    }
+    
+    throw error;
+  }
+}
+
+// Función auxiliar para simular delay
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-// ====== PRODUCTOS ======
-
-export async function getProductos() {
-  if (USE_FAKE_DATA) {
-    await delay(300);
-    return fakeProductos;
-  }
-  
-  try {
-    const res = await fetch(`${BASE_URL}/Productos`);
-    if (!res.ok) throw new Error("Error al obtener productos");
-    const data = await res.json();
-    
-    // Mapear la respuesta del backend al formato esperado por el frontend
-    return data.map(producto => ({
-      id_producto: producto.id,
-      nombre: producto.nombre,
-      descripcion: producto.descripcion,
-      precio: producto.precio,
-      stock: producto.stock,
-      es_sensible: producto.esSensible,
-      categoria: producto.categoria,
-      creado_por: producto.creadoPorId,
-      creado_en: producto.creadoEn,
-      usuario_creador: producto.usuarioCreador
-    }));
-  } catch (error) {
-    console.error('Error al obtener productos:', error);
-    throw error;
-  }
-}
-
-export async function addProducto(productoData) {
-  if (USE_FAKE_DATA) {
-    await delay(300);
-    return { id_producto: Math.floor(Math.random() * 1000), ...productoData };
-  }
-  
-  try {
-    // Mapear datos del frontend al formato esperado por el backend
-    const backendData = {
-      nombre: productoData.nombre,
-      descripcion: productoData.descripcion,
-      precio: parseFloat(productoData.precio),
-      stock: parseInt(productoData.stock),
-      esSensible: productoData.es_sensible,
-      categoria: productoData.categoria,
-      creadoPorId: productoData.creado_por || null
-    };
-
-    const res = await fetch(`${BASE_URL}/Productos`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(backendData),
-    });
-    
-    if (!res.ok) throw new Error("Error al agregar producto");
-    const data = await res.json();
-    
-    // Mapear respuesta del backend al formato del frontend
-    return {
-      id_producto: data.id,
-      nombre: data.nombre,
-      descripcion: data.descripcion,
-      precio: data.precio,
-      stock: data.stock,
-      es_sensible: data.esSensible,
-      categoria: data.categoria,
-      creado_por: data.creadoPorId,
-      creado_en: data.creadoEn
-    };
-  } catch (error) {
-    console.error('Error al agregar producto:', error);
-    throw error;
-  }
-}
-
-export async function updateProducto(id, productoData) {
-  if (USE_FAKE_DATA) {
-    await delay(300);
-    return { id_producto: id, ...productoData };
-  }
-  
-  try {
-    // Mapear datos del frontend al formato esperado por el backend
-    const backendData = {
-      id: id,
-      nombre: productoData.nombre,
-      descripcion: productoData.descripcion,
-      precio: parseFloat(productoData.precio),
-      stock: parseInt(productoData.stock),
-      esSensible: productoData.es_sensible,
-      categoria: productoData.categoria
-    };
-
-    const res = await fetch(`${BASE_URL}/Productos/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(backendData),
-    });
-    
-    if (!res.ok) throw new Error("Error al actualizar producto");
-    const data = await res.json();
-    
-    // Mapear respuesta del backend al formato del frontend
-    return {
-      id_producto: data.id,
-      nombre: data.nombre,
-      descripcion: data.descripcion,
-      precio: data.precio,
-      stock: data.stock,
-      es_sensible: data.esSensible,
-      categoria: data.categoria,
-      creado_por: data.creadoPorId,
-      creado_en: data.creadoEn
-    };
-  } catch (error) {
-    console.error('Error al actualizar producto:', error);
-    throw error;
-  }
-}
-
-export async function deleteProducto(id) {
-  if (USE_FAKE_DATA) {
-    await delay(300);
-    return { success: true };
-  }
-  
-  try {
-    const res = await fetch(`${BASE_URL}/Productos/${id}`, {
-      method: "DELETE",
-    });
-    
-    if (!res.ok) throw new Error("Error al eliminar producto");
-    return { success: true };
-  } catch (error) {
-    console.error('Error al eliminar producto:', error);
-    throw error;
-  }
-}
-
-// ... resto de funciones (mantener igual por ahora)
