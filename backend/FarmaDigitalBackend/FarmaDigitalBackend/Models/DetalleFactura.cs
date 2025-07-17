@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
 {
+    [Table("DetallesFactura")]
     public class DetalleFactura
     {
         [Key]
@@ -28,12 +29,5 @@ namespace FarmaDigitalBackend.Models
         [Required]
         [Column("subtotal", TypeName = "decimal(10,2)")]
         public decimal Subtotal { get; set; }
-
-        // Navegación
-        [ForeignKey("IdFactura")]
-        public Factura Factura { get; set; }
-
-        [ForeignKey("IdProducto")]
-        public Producto Producto { get; set; }
     }
 }

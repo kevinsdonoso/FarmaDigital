@@ -6,7 +6,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace FarmaDigitalBackend.Services  // ✅ Cambiar namespace
+namespace FarmaDigitalBackend.Services
 {
     public class JwtService : IJwtService
     {
@@ -24,7 +24,8 @@ namespace FarmaDigitalBackend.Services  // ✅ Cambiar namespace
             var expire = DateTime.UtcNow.AddHours(10);
             var tokenKey = Encoding.ASCII.GetBytes(_key);
 
-            var permissions = PermissionService.GetPermissionsByRole(user.Rol.NombreRol);
+            string roleName = GetRoleName(user.IdRol);
+            var permissions = PermissionService.GetPermissionsByRole(roleName);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -34,7 +35,7 @@ namespace FarmaDigitalBackend.Services  // ✅ Cambiar namespace
                     { "dni", user.Dni },
                     { "email", user.Correo },
                     { "fullname", user.Nombre },
-                    { "role", user.Rol.NombreRol },
+                    { "role", roleName },
                     { "permissions", string.Join(";", permissions.Select(p => $"{p.Module}:{p.Action}:{p.Resource}")) }
                 },
                 Subject = new ClaimsIdentity(new[]
@@ -42,7 +43,7 @@ namespace FarmaDigitalBackend.Services  // ✅ Cambiar namespace
                     new Claim(ClaimTypes.NameIdentifier, user.IdUsuario.ToString()),
                     new Claim(ClaimTypes.Name, user.Nombre),
                     new Claim(ClaimTypes.Email, user.Correo),
-                    new Claim(ClaimTypes.Role, user.Rol.NombreRol)
+                    new Claim("role", roleName) 
                 }),
                 Expires = expire,
                 SigningCredentials = new SigningCredentials(
@@ -58,11 +59,22 @@ namespace FarmaDigitalBackend.Services  // ✅ Cambiar namespace
                 UserId = user.IdUsuario,
                 Nombre = user.Nombre,
                 Correo = user.Correo,
-                Rol = user.Rol.NombreRol,
+                Rol = roleName,
                 Permissions = permissions.Select(p => $"{p.Module}:{p.Action}:{p.Resource}").ToList()
             };
 
             return new TokenResponse(tokenString, expire, tokenType, userInfo);
+        }
+
+        private string GetRoleName(int idRol)
+        {
+            return idRol switch
+            {
+                1 => "Administrador",
+                2 => "Farmaceutico",
+                3 => "Cliente",
+                _ => "Cliente" 
+            };
         }
 
         public bool ValidateToken(string token)
@@ -71,7 +83,7 @@ namespace FarmaDigitalBackend.Services  // ✅ Cambiar namespace
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.ASCII.GetBytes(_key);
-                
+
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,

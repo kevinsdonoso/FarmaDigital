@@ -1,5 +1,5 @@
 ﻿using FarmaDigitalBackend.Models;
-using FarmaDigitalBackend.Services.Interfaces; // ✅ Debe ser con "s"
+using FarmaDigitalBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FarmaDigitalBackend.Controllers
@@ -16,20 +16,22 @@ namespace FarmaDigitalBackend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetProducts([FromQuery] int? stock)
+        public async Task<IActionResult> GetProducts([FromQuery] bool? stock, [FromQuery] bool? activo)
         {
-            if (stock.HasValue && stock.Value == 0)
+            if (stock.HasValue && stock.Value)
                 return await _productoService.GetProductsWithStock();
+                
+            if (activo.HasValue && activo.Value)
+                return await _productoService.GetActiveProducts();
 
-            return await _productoService.GetAllProducts();
+            return await _productoService.GetAllProducts(); 
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetProduct(int id)
+        [HttpGet("producto")] 
+        public async Task<IActionResult> GetProduct([FromQuery] int id)
         {
             return await _productoService.GetProductById(id);
         }
-
 
         [HttpPost]
         public async Task<IActionResult> CreateProduct([FromBody] Producto producto)
@@ -37,14 +39,14 @@ namespace FarmaDigitalBackend.Controllers
             return await _productoService.CreateProduct(producto);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Producto producto)
+        [HttpPut("producto")] 
+        public async Task<IActionResult> UpdateProduct([FromQuery] int id, [FromBody] Producto producto)
         {
             return await _productoService.UpdateProduct(id, producto);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProduct(int id)
+        [HttpDelete("producto")] 
+        public async Task<IActionResult> DeleteProduct([FromQuery] int id)
         {
             return await _productoService.DeleteProduct(id);
         }

@@ -1,4 +1,4 @@
-﻿﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
@@ -37,15 +37,13 @@ namespace FarmaDigitalBackend.Models
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
-        // Navegación
-        [ForeignKey("IdRol")]
-        public Rol Rol { get; set; }
-        
-        // Solo agrega estas si realmente tienes esas entidades
-        public ICollection<Producto>? Productos { get; set; }
-        public ICollection<Carrito>? Carritos { get; set; }
-        public ICollection<Orden>? Ordenes { get; set; }
-        public ICollection<Factura>? Facturas { get; set; }
-        public ICollection<LogAuditoria>? LogsAuditoria { get; set; }
+        // ✅ SIN NAVEGACIÓN - Solo datos simples
+        // NO incluir:
+        // public Rol Rol { get; set; }
+        // public ICollection<Producto>? Productos { get; set; }
+        // public ICollection<Carrito>? Carritos { get; set; }
+        // public ICollection<Orden>? Ordenes { get; set; }
+        // public ICollection<Factura>? Facturas { get; set; }
+        // public ICollection<LogAuditoria>? LogsAuditoria { get; set; }
     }
 }

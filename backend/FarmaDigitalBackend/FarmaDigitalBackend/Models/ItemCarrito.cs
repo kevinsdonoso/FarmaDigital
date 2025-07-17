@@ -1,8 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
 {
+    [Table("ItemsCarrito")]
     public class ItemCarrito
     {
         [Key]
@@ -19,11 +20,8 @@ namespace FarmaDigitalBackend.Models
         [Column("cantidad")]
         public int Cantidad { get; set; }
 
-        // Navegación
-        [ForeignKey("IdCarrito")]
-        public Carrito Carrito { get; set; }
-
-        [ForeignKey("IdProducto")]
-        public Producto Producto { get; set; }
+        // ✅ ELIMINADO:
+        // public Carrito Carrito { get; set; }
+        // public Producto Producto { get; set; }
     }
 }

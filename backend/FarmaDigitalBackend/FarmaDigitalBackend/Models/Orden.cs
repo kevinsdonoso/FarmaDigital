@@ -1,9 +1,9 @@
-﻿using FarmaDigitalBackend.Models;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
 
 namespace FarmaDigitalBackend.Models
 {
+    [Table("Ordenes")]
     public class Orden
     {
         [Key]
@@ -21,7 +21,7 @@ namespace FarmaDigitalBackend.Models
 
         [MaxLength(50)]
         [Column("metodo_pago")]
-        public string MetodoPago { get; set; }
+        public string MetodoPago { get; set; } = string.Empty;
 
         [MaxLength(20)]
         [Column("estado")]
@@ -29,14 +29,5 @@ namespace FarmaDigitalBackend.Models
 
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
-
-        // Navegación
-        [ForeignKey("IdUsuario")]
-        public Usuario Usuario { get; set; }
-
-        [ForeignKey("IdCarrito")]
-        public Carrito Carrito { get; set; }
-
-        public ICollection<Factura> Facturas { get; set; }
     }
 }

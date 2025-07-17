@@ -16,25 +16,20 @@ namespace FarmaDigitalBackend.Repositories
 
         public async Task<List<Usuario>> GetAllUsersAsync()
         {
-            return await _context.Usuarios
-                .Include(u => u.Rol)
-                .ToListAsync();
+            return await _context.Usuarios.ToListAsync(); 
         }
 
         public async Task<Usuario?> GetUserByDni(string dni)
         {
-            var result = await _context.Usuarios
-                .Include(u => u.Rol)
+            return await _context.Usuarios
                 .Where(u => u.Dni == dni)
-                .FirstOrDefaultAsync();
-
-            return result;
+                .FirstOrDefaultAsync(); 
         }
+
         public async Task<Usuario?> GetUserByDniOrEmail(string identifier)
         {
             return await _context.Usuarios
-                .Include(u => u.Rol)
-                .FirstOrDefaultAsync(u => u.Dni == identifier || u.Correo == identifier);
+                .FirstOrDefaultAsync(u => u.Dni == identifier || u.Correo == identifier); 
         }
 
         public async Task<Usuario> CreateUser(Usuario user)

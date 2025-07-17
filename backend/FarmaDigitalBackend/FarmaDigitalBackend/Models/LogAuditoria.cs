@@ -1,9 +1,9 @@
-﻿using FarmaDigitalBackend.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
 {
+    [Table("LogsAuditoria")]
     public class LogAuditoria
     {
         [Key]
@@ -15,21 +15,16 @@ namespace FarmaDigitalBackend.Models
 
         [MaxLength(100)]
         [Column("accion")]
-        public string Accion { get; set; }
+        public string Accion { get; set; } = string.Empty;
 
         [Column("descripcion")]
-        public string Descripcion { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
 
         [MaxLength(50)]
         [Column("direccion_ip")]
-        public string DireccionIp { get; set; }
+        public string DireccionIp { get; set; } = string.Empty;
 
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
-
-        // Navegación
-        [ForeignKey("IdUsuario")]
-        public Usuario Usuario { get; set; }
     }
-
 }

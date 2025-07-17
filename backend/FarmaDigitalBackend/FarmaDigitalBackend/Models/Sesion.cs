@@ -1,9 +1,9 @@
-﻿using FarmaDigitalBackend.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FarmaDigitalBackend.Models
 {
+    [Table("Sesiones")]
     public class Sesion
     {
         [Key]
@@ -17,7 +17,7 @@ namespace FarmaDigitalBackend.Models
         [Required]
         [MaxLength(255)]
         [Column("token")]
-        public string Token { get; set; }
+        public string Token { get; set; } = string.Empty;
 
         [Column("fecha_creacion")]
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
@@ -30,11 +30,6 @@ namespace FarmaDigitalBackend.Models
 
         [MaxLength(50)]
         [Column("direccion_ip")]
-        public string DireccionIp { get; set; }
-
-        // Navegación
-        [ForeignKey("IdUsuario")]
-        public Usuario Usuario { get; set; }
+        public string DireccionIp { get; set; } = string.Empty;
     }
-
 }

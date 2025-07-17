@@ -26,6 +26,12 @@ namespace FarmaDigitalBackend.Services
             return new OkObjectResult(productos);
         }
 
+        public async Task<IActionResult> GetActiveProducts() // ✅ NUEVO
+        {
+            var productos = await _productoRepository.GetActiveProducts();
+            return new OkObjectResult(productos);
+        }
+
         public async Task<IActionResult> GetProductById(int id)
         {
             var producto = await _productoRepository.GetProductById(id);
@@ -38,7 +44,7 @@ namespace FarmaDigitalBackend.Services
             producto.Activo = true;
             
             var nuevoProducto = await _productoRepository.CreateProduct(producto);
-            return new CreatedAtActionResult("GetProductById", "Productos", 
+            return new CreatedAtActionResult("GetProduct", "Productos", 
                 new { id = nuevoProducto.IdProducto }, nuevoProducto);
         }
 

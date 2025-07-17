@@ -12,15 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FarmaDigitalBackend.Migrations
 {
     [DbContext(typeof(FarmaDbContext))]
-    [Migration("20250715105325_InitialSetup")]
-    partial class InitialSetup
+    [Migration("20250717072026_Inicial")]
+    partial class Inicial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.6")
+                .HasAnnotation("ProductVersion", "9.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -99,9 +99,7 @@ namespace FarmaDigitalBackend.Migrations
 
                     b.HasKey("IdCarrito");
 
-                    b.HasIndex("IdUsuario");
-
-                    b.ToTable("Carrito");
+                    b.ToTable("Carritos");
                 });
 
             modelBuilder.Entity("FarmaDigitalBackend.Models.DetalleFactura", b =>
@@ -116,6 +114,9 @@ namespace FarmaDigitalBackend.Migrations
                     b.Property<int>("Cantidad")
                         .HasColumnType("integer")
                         .HasColumnName("cantidad");
+
+                    b.Property<int?>("FacturaIdFactura")
+                        .HasColumnType("integer");
 
                     b.Property<int>("IdFactura")
                         .HasColumnType("integer")
@@ -135,9 +136,7 @@ namespace FarmaDigitalBackend.Migrations
 
                     b.HasKey("IdDetalleFactura");
 
-                    b.HasIndex("IdFactura");
-
-                    b.HasIndex("IdProducto");
+                    b.HasIndex("FacturaIdFactura");
 
                     b.ToTable("DetallesFactura");
                 });
@@ -189,9 +188,6 @@ namespace FarmaDigitalBackend.Migrations
                         .HasColumnType("decimal(10,2)")
                         .HasColumnName("subtotal");
 
-                    b.Property<int?>("TarjetaId")
-                        .HasColumnType("integer");
-
                     b.Property<decimal>("Total")
                         .HasColumnType("decimal(10,2)")
                         .HasColumnName("total");
@@ -202,38 +198,7 @@ namespace FarmaDigitalBackend.Migrations
 
                     b.HasIndex("IdUsuario");
 
-                    b.HasIndex("TarjetaId");
-
                     b.ToTable("Facturas");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.IntentoLogin", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Exito")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("Fecha")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("IdUsuario")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Ip")
-                        .IsRequired()
-                        .HasMaxLength(45)
-                        .HasColumnType("character varying(45)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdUsuario");
-
-                    b.ToTable("IntentosLogin");
                 });
 
             modelBuilder.Entity("FarmaDigitalBackend.Models.ItemCarrito", b =>
@@ -259,11 +224,7 @@ namespace FarmaDigitalBackend.Migrations
 
                     b.HasKey("IdItemCarrito");
 
-                    b.HasIndex("IdCarrito");
-
-                    b.HasIndex("IdProducto");
-
-                    b.ToTable("ItemCarrito");
+                    b.ToTable("ItemsCarrito");
                 });
 
             modelBuilder.Entity("FarmaDigitalBackend.Models.LogAuditoria", b =>
@@ -301,8 +262,6 @@ namespace FarmaDigitalBackend.Migrations
                         .HasColumnName("id_usuario");
 
                     b.HasKey("IdLog");
-
-                    b.HasIndex("IdUsuario");
 
                     b.ToTable("LogsAuditoria");
                 });
@@ -346,11 +305,7 @@ namespace FarmaDigitalBackend.Migrations
 
                     b.HasKey("IdOrden");
 
-                    b.HasIndex("IdCarrito");
-
-                    b.HasIndex("IdUsuario");
-
-                    b.ToTable("Orden");
+                    b.ToTable("Ordenes");
                 });
 
             modelBuilder.Entity("FarmaDigitalBackend.Models.Producto", b =>
@@ -362,6 +317,12 @@ namespace FarmaDigitalBackend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdProducto"));
 
+                    b.Property<bool>("Activo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("Activo");
+
                     b.Property<string>("Categoria")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -369,20 +330,24 @@ namespace FarmaDigitalBackend.Migrations
                         .HasColumnName("categoria");
 
                     b.Property<DateTime>("CreadoEn")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("creado_en");
+                        .HasColumnName("creado_en")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<int>("CreadoPor")
+                    b.Property<int?>("CreadoPor")
                         .HasColumnType("integer")
                         .HasColumnName("creado_por");
 
                     b.Property<string>("Descripcion")
-                        .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("descripcion");
 
                     b.Property<bool>("EsSensible")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("es_sensible");
 
                     b.Property<string>("Nombre")
@@ -401,9 +366,7 @@ namespace FarmaDigitalBackend.Migrations
 
                     b.HasKey("IdProducto");
 
-                    b.HasIndex("CreadoPor");
-
-                    b.ToTable("Productos");
+                    b.ToTable("Productos", (string)null);
                 });
 
             modelBuilder.Entity("FarmaDigitalBackend.Models.Rol", b =>
@@ -424,88 +387,6 @@ namespace FarmaDigitalBackend.Migrations
                     b.HasKey("IdRol");
 
                     b.ToTable("Roles");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Sesion", b =>
-                {
-                    b.Property<int>("IdSesion")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id_sesion");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdSesion"));
-
-                    b.Property<bool>("Activa")
-                        .HasColumnType("boolean")
-                        .HasColumnName("activa");
-
-                    b.Property<string>("DireccionIp")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("direccion_ip");
-
-                    b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("fecha_creacion");
-
-                    b.Property<DateTime>("FechaExpiracion")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("fecha_expiracion");
-
-                    b.Property<int>("IdUsuario")
-                        .HasColumnType("integer")
-                        .HasColumnName("id_usuario");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("token");
-
-                    b.HasKey("IdSesion");
-
-                    b.HasIndex("IdUsuario");
-
-                    b.ToTable("Sesiones");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Tarjeta", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("FechaVencimiento")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("IdUsuario")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Marca")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("TokenTarjeta")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Ultimos4")
-                        .IsRequired()
-                        .HasMaxLength(4)
-                        .HasColumnType("character varying(4)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdUsuario");
-
-                    b.HasIndex("TokenTarjeta")
-                        .IsUnique();
-
-                    b.ToTable("Tarjetas");
                 });
 
             modelBuilder.Entity("FarmaDigitalBackend.Models.TwoFactorAuth", b =>
@@ -542,8 +423,7 @@ namespace FarmaDigitalBackend.Migrations
 
                     b.HasKey("IdTwoFactor");
 
-                    b.HasIndex("IdUsuario")
-                        .IsUnique();
+                    b.HasIndex("IdUsuario");
 
                     b.ToTable("TwoFactorAuths");
                 });
@@ -564,8 +444,10 @@ namespace FarmaDigitalBackend.Migrations
                         .HasColumnName("correo");
 
                     b.Property<DateTime>("CreadoEn")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("creado_en");
+                        .HasColumnName("creado_en")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Dni")
                         .IsRequired()
@@ -578,7 +460,9 @@ namespace FarmaDigitalBackend.Migrations
                         .HasColumnName("id_rol");
 
                     b.Property<bool>("MfaActivado")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(false)
                         .HasColumnName("mfa_activado");
 
                     b.Property<string>("Nombre")
@@ -594,12 +478,7 @@ namespace FarmaDigitalBackend.Migrations
 
                     b.HasKey("IdUsuario");
 
-                    b.HasIndex("Correo")
-                        .IsUnique();
-
-                    b.HasIndex("IdRol");
-
-                    b.ToTable("Usuarios");
+                    b.ToTable("Usuarios", (string)null);
                 });
 
             modelBuilder.Entity("FarmaDigitalBackend.Models.AlertaSeguridad", b =>
@@ -611,144 +490,28 @@ namespace FarmaDigitalBackend.Migrations
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Carrito", b =>
-                {
-                    b.HasOne("FarmaDigitalBackend.Models.Usuario", "Usuario")
-                        .WithMany("Carritos")
-                        .HasForeignKey("IdUsuario")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Usuario");
-                });
-
             modelBuilder.Entity("FarmaDigitalBackend.Models.DetalleFactura", b =>
                 {
-                    b.HasOne("FarmaDigitalBackend.Models.Factura", "Factura")
+                    b.HasOne("FarmaDigitalBackend.Models.Factura", null)
                         .WithMany("DetallesFactura")
-                        .HasForeignKey("IdFactura")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FarmaDigitalBackend.Models.Producto", "Producto")
-                        .WithMany("DetallesFactura")
-                        .HasForeignKey("IdProducto")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Factura");
-
-                    b.Navigation("Producto");
+                        .HasForeignKey("FacturaIdFactura");
                 });
 
             modelBuilder.Entity("FarmaDigitalBackend.Models.Factura", b =>
                 {
                     b.HasOne("FarmaDigitalBackend.Models.Orden", "Orden")
-                        .WithMany("Facturas")
+                        .WithMany()
                         .HasForeignKey("IdOrden")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("FarmaDigitalBackend.Models.Usuario", "Usuario")
-                        .WithMany("Facturas")
+                        .WithMany()
                         .HasForeignKey("IdUsuario")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("FarmaDigitalBackend.Models.Tarjeta", null)
-                        .WithMany("Facturas")
-                        .HasForeignKey("TarjetaId");
 
                     b.Navigation("Orden");
-
-                    b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.IntentoLogin", b =>
-                {
-                    b.HasOne("FarmaDigitalBackend.Models.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("IdUsuario")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.ItemCarrito", b =>
-                {
-                    b.HasOne("FarmaDigitalBackend.Models.Carrito", "Carrito")
-                        .WithMany("ItemsCarrito")
-                        .HasForeignKey("IdCarrito")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FarmaDigitalBackend.Models.Producto", "Producto")
-                        .WithMany("ItemsCarrito")
-                        .HasForeignKey("IdProducto")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Carrito");
-
-                    b.Navigation("Producto");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.LogAuditoria", b =>
-                {
-                    b.HasOne("FarmaDigitalBackend.Models.Usuario", "Usuario")
-                        .WithMany("LogsAuditoria")
-                        .HasForeignKey("IdUsuario");
-
-                    b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Orden", b =>
-                {
-                    b.HasOne("FarmaDigitalBackend.Models.Carrito", "Carrito")
-                        .WithMany("Ordenes")
-                        .HasForeignKey("IdCarrito");
-
-                    b.HasOne("FarmaDigitalBackend.Models.Usuario", "Usuario")
-                        .WithMany("Ordenes")
-                        .HasForeignKey("IdUsuario")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Carrito");
-
-                    b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Producto", b =>
-                {
-                    b.HasOne("FarmaDigitalBackend.Models.Usuario", "Usuario")
-                        .WithMany("Productos")
-                        .HasForeignKey("CreadoPor")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Sesion", b =>
-                {
-                    b.HasOne("FarmaDigitalBackend.Models.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("IdUsuario")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Tarjeta", b =>
-                {
-                    b.HasOne("FarmaDigitalBackend.Models.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("IdUsuario")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("Usuario");
                 });
@@ -756,70 +519,17 @@ namespace FarmaDigitalBackend.Migrations
             modelBuilder.Entity("FarmaDigitalBackend.Models.TwoFactorAuth", b =>
                 {
                     b.HasOne("FarmaDigitalBackend.Models.Usuario", "Usuario")
-                        .WithOne()
-                        .HasForeignKey("FarmaDigitalBackend.Models.TwoFactorAuth", "IdUsuario")
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Usuario");
                 });
 
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Usuario", b =>
-                {
-                    b.HasOne("FarmaDigitalBackend.Models.Rol", "Rol")
-                        .WithMany("Usuarios")
-                        .HasForeignKey("IdRol")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Rol");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Carrito", b =>
-                {
-                    b.Navigation("ItemsCarrito");
-
-                    b.Navigation("Ordenes");
-                });
-
             modelBuilder.Entity("FarmaDigitalBackend.Models.Factura", b =>
                 {
                     b.Navigation("DetallesFactura");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Orden", b =>
-                {
-                    b.Navigation("Facturas");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Producto", b =>
-                {
-                    b.Navigation("DetallesFactura");
-
-                    b.Navigation("ItemsCarrito");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Rol", b =>
-                {
-                    b.Navigation("Usuarios");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Tarjeta", b =>
-                {
-                    b.Navigation("Facturas");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Usuario", b =>
-                {
-                    b.Navigation("Carritos");
-
-                    b.Navigation("Facturas");
-
-                    b.Navigation("LogsAuditoria");
-
-                    b.Navigation("Ordenes");
-
-                    b.Navigation("Productos");
                 });
 #pragma warning restore 612, 618
         }

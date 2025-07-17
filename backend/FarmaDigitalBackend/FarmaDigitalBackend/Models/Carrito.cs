@@ -1,9 +1,9 @@
-﻿using FarmaDigitalBackend.Models;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
 
 namespace FarmaDigitalBackend.Models
 {
+    [Table("Carritos")]
     public class Carrito
     {
         [Key]
@@ -18,11 +18,5 @@ namespace FarmaDigitalBackend.Models
 
         [Column("creado_en")]
         public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
-
-        // Navegación
-        [ForeignKey("IdUsuario")]
-        public Usuario Usuario { get; set; }
-        public ICollection<ItemCarrito> ItemsCarrito { get; set; }
-        public ICollection<Orden> Ordenes { get; set; }
     }
 }
