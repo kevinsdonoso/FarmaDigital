@@ -12,6 +12,18 @@ var configuration = builder.Configuration;
 
 var key = "FarmaDigital-JWT-Secret-Key-2024-Very-Long-And-Secure-Key-For-Production";
 
+// AGREGAR CORS AQUÍ 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "https://localhost:3000", "https://localhost:3001")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -30,7 +42,7 @@ builder.Services.AddAuthentication(x =>
 });
 
 // JWT Service con la key
-builder.Services.AddSingleton<IJwtService>(provider => 
+builder.Services.AddSingleton<IJwtService>(provider =>
     new JwtService(key));
 
 // Database
@@ -51,6 +63,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// USAR CORS AQUÍ (IMPORTANTE: ANTES DE UseAuthentication)
+app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 

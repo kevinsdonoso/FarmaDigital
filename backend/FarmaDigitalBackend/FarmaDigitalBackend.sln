@@ -1,13 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36212.18 d17.14
+VisualStudioVersion = 17.14.36212.18
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FarmaDigitalBackend", "FarmaDigitalBackend\FarmaDigitalBackend.csproj", "{C6799713-C6CE-BA99-B90D-FD1F0E0662A4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FarmaDigitalBackend.AppHost", "FarmaDigitalBackend.AppHost\FarmaDigitalBackend.AppHost.csproj", "{20088B6E-56A1-43BA-A4B4-EA6BC7D7FA62}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FarmaDigitalBackend.ServiceDefaults", "FarmaDigitalBackend.ServiceDefaults\FarmaDigitalBackend.ServiceDefaults.csproj", "{F4D5CEE1-B935-AF89-95E3-E6BBC5AF3496}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +15,6 @@ Global
 		{C6799713-C6CE-BA99-B90D-FD1F0E0662A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C6799713-C6CE-BA99-B90D-FD1F0E0662A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C6799713-C6CE-BA99-B90D-FD1F0E0662A4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{20088B6E-56A1-43BA-A4B4-EA6BC7D7FA62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{20088B6E-56A1-43BA-A4B4-EA6BC7D7FA62}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{20088B6E-56A1-43BA-A4B4-EA6BC7D7FA62}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{20088B6E-56A1-43BA-A4B4-EA6BC7D7FA62}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F4D5CEE1-B935-AF89-95E3-E6BBC5AF3496}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F4D5CEE1-B935-AF89-95E3-E6BBC5AF3496}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F4D5CEE1-B935-AF89-95E3-E6BBC5AF3496}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F4D5CEE1-B935-AF89-95E3-E6BBC5AF3496}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

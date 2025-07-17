@@ -26,13 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FarmaDigitalBackend.ServiceDefaults\FarmaDigitalBackend.ServiceDefaults.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="Migrations\" />
     <Folder Include="Models\DTOs\" />
-    <Folder Include="Service\Interface\" />
   </ItemGroup>
 
 </Project>
