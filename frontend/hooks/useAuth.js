@@ -4,15 +4,12 @@ import { fakeUsuarios } from '../lib/fakeData';
 
 const useAuth = create((set) => ({
   state: {
-    user: {
-      id_usuario: 1,
-      nombre: "Juan Perez",
-      correo: "juan@example.com",
-      role: "cliente" // Mapeamos id_rol 1 a "cliente"
-    }, // Usuario fake inicial para simular estar logueado
-    isAuthenticated: true,
+    user: null,
+    isAuthenticated: false,
     loading: false,
+    token: null,
   },
+  
   login: (userData) => set((state) => ({
     state: {
       ...state.state,
@@ -21,25 +18,52 @@ const useAuth = create((set) => ({
       loading: false,
     }
   })),
-  logout: () => set((state) => ({
-    state: {
-      ...state.state,
-      user: null,
-      isAuthenticated: false,
-      loading: false,
-    }
-  })),
+  
+  logout: () => set((state) => {
+    localStorage.removeItem('token');
+    return {
+      state: {
+        ...state.state,
+        user: null,
+        isAuthenticated: false,
+        loading: false,
+        token: null,
+      }
+    };
+  }),
+  
   setLoading: (loading) => set((state) => ({
     state: {
       ...state.state,
       loading,
     }
   })),
-  // Función para cambiar entre diferentes usuarios fake
+
+  setToken: (token) => set((state) => ({
+    state: {
+      ...state.state,
+      token,
+    }
+  })),
+
+  // Función para validar token almacenado
+  validateStoredToken: () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Aquí puedes agregar validación del token si es necesario
+      set((state) => ({
+        state: {
+          ...state.state,
+          token,
+        }
+      }));
+    }
+  },
+
+  // Función para cambiar entre diferentes usuarios fake (mantener para desarrollo)
   switchUser: (userId) => set((state) => {
     const fakeUser = fakeUsuarios.find(u => u.id_usuario === userId);
     if (fakeUser) {
-      // Mapear id_rol a nombre de rol
       const roleMap = {
         1: 'cliente',
         2: 'vendedor', 
