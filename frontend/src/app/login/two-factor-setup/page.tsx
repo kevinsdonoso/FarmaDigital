@@ -1,178 +1,127 @@
-'use client'
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '../../../../hooks/useAuth';
+'use client';
 
-// Definir tipos
-interface Errors {
-  code?: string;
-  submit?: string;
-}
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { loginUser } from '@/lib/api';
 
 export default function TwoFactorSetupPage() {
+  const [code, setCode] = useState('');
+  const [qrCode, setQrCode] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, setLoading } = useAuth();
-  
-  const [username, setUsername] = useState<string>('');
-  const [qrCode, setQrCode] = useState<string>('');
-  const [twoFactorCode, setTwoFactorCode] = useState<string>('');
-  const [errors, setErrors] = useState<Errors>({});
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
-    // Obtener parámetros de la URL
     const usernameParam = searchParams.get('username');
+    const passwordParam = searchParams.get('password');
     const qrParam = searchParams.get('qr');
     
-    if (usernameParam) setUsername(usernameParam);
-    if (qrParam) setQrCode(qrParam);
-    
-    // Si no hay parámetros, redirigir al login
-    if (!usernameParam || !qrParam) {
+    if (!usernameParam || !passwordParam || !qrParam) {
       router.push('/login');
+      return;
     }
+    
+    setUsername(usernameParam);
+    setPassword(passwordParam);
+    setQrCode(qrParam);
   }, [searchParams, router]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (!twoFactorCode.trim()) {
-      setErrors({ code: 'El código 2FA es requerido' });
-      return;
-    }
-
-    if (twoFactorCode.length !== 6) {
-      setErrors({ code: 'El código debe tener 6 dígitos' });
-      return;
-    }
-
-    setIsSubmitting(true);
+  const handleConfirm = async () => {
     setLoading(true);
+    setError('');
 
     try {
-      const response = await fetch('http://localhost:5245/api/Auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: username,
-          password: '', // No necesitamos password aquí para la verificación 2FA
-          twoFactorCode: twoFactorCode
-        }),
-      });
+      // Debug: mostrar exactamente qué se está enviando
+      const requestData = {
+        username,
+        password,
+        twoFactorCode: code,
+      };
+      
+      console.log('Enviando datos para verificación 2FA:', requestData);
+      
+      const res = await loginUser(requestData);
+      
+      console.log('Respuesta del servidor después de 2FA:', res);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Login exitoso, guardar token y redirigir
-        localStorage.setItem('token', data.access_token || data.token);
-        login(data.user_info || data.user);
+      if (res.success) {
+        console.log('Login exitoso con 2FA');
+        localStorage.setItem('token', res.access_token);
+        localStorage.setItem('user', JSON.stringify(res.user_info));
         router.push('/dashboard');
+      } else if (res.requires2FA) {
+        // Si sigue requiriendo 2FA, significa que el código es incorrecto
+        console.log('Código 2FA incorrecto o inválido');
+        setError('Código 2FA inválido. Verifica que el código sea correcto y que tu aplicación esté sincronizada.');
       } else {
-        setErrors({ code: data.error || data.message || 'Código 2FA inválido' });
+        console.log('Error en respuesta:', res);
+        setError(res.message || 'Error en la verificación 2FA');
       }
-    } catch (error) {
-      console.error('Error en verificación 2FA:', error);
-      setErrors({ code: 'Error de conexión. Intenta nuevamente.' });
+    } catch (err) {
+      console.error('Error en verificación 2FA:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error de conexión';
+      setError(errorMessage);
     } finally {
-      setIsSubmitting(false);
       setLoading(false);
     }
   };
 
-  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6); // Solo números, máximo 6
-    setTwoFactorCode(value);
-    if (errors.code) {
-      setErrors({ ...errors, code: '' });
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Configurar Autenticación 2FA
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Escanea el código QR con tu app de autenticación
-        </p>
+    <div className="p-4 max-w-md mx-auto">
+      <h1 className="text-xl font-semibold mb-4">Configura tu 2FA</h1>
+      
+      <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+        <h3 className="font-medium text-blue-900 mb-2">Instrucciones:</h3>
+        <ol className="text-sm text-blue-800 space-y-1">
+          <li>1. Descarga Google Authenticator o Authy</li>
+          <li>2. Escanea el código QR</li>
+          <li>3. Ingresa el código de 6 dígitos que aparece</li>
+        </ol>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <div className="space-y-6">
-            {/* Código QR */}
-            <div className="text-center">
-              <div className="mb-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Paso 1: Escanea el código QR
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Usa Google Authenticator, Authy, o cualquier app de autenticación
-                </p>
-                {qrCode && (
-                  <div className="flex justify-center">
-                    <img 
-                      src={qrCode} 
-                      alt="Código QR para 2FA" 
-                      className="border-2 border-gray-300 rounded-lg"
-                      style={{ maxWidth: '200px', maxHeight: '200px' }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Formulario para código */}
-            <form onSubmit={handleSubmit}>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Paso 2: Ingresa el código de verificación
-                </h3>
-                <label htmlFor="twoFactorCode" className="block text-sm font-medium text-gray-700">
-                  Código de 6 dígitos
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="twoFactorCode"
-                    name="twoFactorCode"
-                    type="text"
-                    value={twoFactorCode}
-                    onChange={handleCodeChange}
-                    maxLength={6}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-center text-lg font-mono"
-                    placeholder="000000"
-                  />
-                  {errors.code && <p className="mt-2 text-sm text-red-600">{errors.code}</p>}
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <button
-                  type="submit"
-                  disabled={isSubmitting || twoFactorCode.length !== 6}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Verificando...' : 'Verificar y Continuar'}
-                </button>
-              </div>
-            </form>
-
-            {/* Enlaces auxiliares */}
-            <div className="text-center">
-              <button
-                onClick={() => router.push('/login')}
-                className="text-sm text-blue-600 hover:text-blue-500"
-              >
-                ← Volver al login
-              </button>
-            </div>
-          </div>
+      {qrCode && (
+        <div className="text-center mb-4">
+          <img src={qrCode} alt="QR 2FA" className="mb-2 w-[200px] h-[200px] mx-auto border" />
+          <p className="text-xs text-gray-600">Escanea con tu app de autenticación</p>
         </div>
+      )}
+
+      <input
+        type="text"
+        placeholder="Código 2FA (6 dígitos)"
+        value={code}
+        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+        className="border p-2 w-full mb-2 text-center text-lg font-mono"
+        maxLength={6}
+        required
+      />
+
+      {error && <div className="text-red-600 text-sm mb-2 p-2 bg-red-50 rounded">{error}</div>}
+
+      {/* Debug info */}
+      <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
+        <p><strong>Debug:</strong></p>
+        <p>Usuario: {username}</p>
+        <p>Código: {code} ({code.length}/6)</p>
       </div>
+
+      <button 
+        onClick={handleConfirm} 
+        disabled={loading || code.length !== 6} 
+        className="bg-green-600 text-white px-4 py-2 rounded w-full disabled:opacity-50 mb-2"
+      >
+        {loading ? 'Verificando...' : 'Confirmar Código'}
+      </button>
+      
+      <button 
+        onClick={() => router.push('/login')} 
+        className="text-blue-600 hover:text-blue-800 w-full text-sm"
+      >
+        ← Volver al login
+      </button>
     </div>
   );
 }
