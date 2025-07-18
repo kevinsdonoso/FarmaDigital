@@ -1,64 +1,25 @@
-import React from 'react';
-import { Input } from '../ui/Input';
-import { PasswordInput } from '../ui/PasswordInput';
-import { Button } from '../ui/Button';
-import Link from 'next/link';
-
-export const LoginForm = ({
-  formData,
-  onChange,
-  onSubmit,
-  loading,
-  showPassword,
-  setShowPassword,
-  error,
-}) => (
-  <form className="space-y-4" onSubmit={onSubmit}>
-    <Input
-      label="DNI o Correo electrónico"
-      name="username"
-      type="text"
-      value={formData.username}
-      onChange={onChange}
-      placeholder="DNI o correo@ejemplo.com"
-      required
-    />
-    <PasswordInput
-      label="Contraseña"
-      name="password"
-      value={formData.password}
-      onChange={onChange}
-      placeholder="Contraseña"
-      show={showPassword}
-      setShow={setShowPassword}
-      required
-    />
-    <div className="flex items-center justify-between">
-      <Link
-        href="/forgot-password"
-        className="text-sm font-medium text-blue-600 hover:text-blue-500"
-      >
-        ¿Olvidaste tu contraseña?
-      </Link>
-    </div>
-    <Button
-      type="submit"
-      loading={loading}
-      className="w-full"
-    >
-      Iniciar Sesión
-    </Button>
-    <div className="text-center">
-      <span className="text-sm text-gray-600">¿No tienes cuenta? </span>
-      <Link
-        href="/register"
-        className="font-medium text-blue-600 hover:text-blue-500"
-      >
-        Regístrate
-      </Link>
-    </div>
-    {error && (
-      <div className="mt-2 text-red-600 text-sm text-center">{error}</div>
-    )}
-  </form>
-);
+export function LoginForm({ formData, onChange, onSubmit, loading }) {
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <input
+        type="text"
+        name="username"
+        placeholder="DNI o usuario"
+        value={formData.username}
+        onChange={onChange}
+        className="border p-2 w-full"
+      />
+      <input
+        type="password"
+        name="password"
+        placeholder="Contraseña"
+        value={formData.password}
+        onChange={onChange}
+        className="border p-2 w-full"
+      />
+      <button type="submit" disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded">
+        {loading ? 'Cargando...' : 'Iniciar sesión'}
+      </button>
+    </form>
+  );
+}

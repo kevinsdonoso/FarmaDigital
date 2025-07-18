@@ -7,8 +7,8 @@ const colorMap = {
   info: 'bg-blue-50 border-blue-400 text-blue-800',
 };
 
-export const Alert = ({ type = 'info', children }) => (
-  <div className={`border-l-4 p-4 mb-4 rounded-md ${colorMap[type]}`}>
+export const Alert = ({ type = 'info', children, className = '' }) => (
+  <div className={`border-l-4 p-4 mb-4 rounded-md ${colorMap[type]} ${className}`}>
     {children}
   </div>
 );

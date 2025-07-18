@@ -7,9 +7,8 @@ import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 
-export default function TwoFactorSetupPage() {
+export default function TwoFactorPage() {
   const [code, setCode] = useState('');
-  const [qrCode, setQrCode] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,19 +19,18 @@ export default function TwoFactorSetupPage() {
   useEffect(() => {
     const usernameParam = searchParams.get('username');
     const passwordParam = searchParams.get('password');
-    const qrParam = searchParams.get('qr');
     
-    if (!usernameParam || !passwordParam || !qrParam) {
+    if (!usernameParam || !passwordParam) {
       router.push('/login');
       return;
     }
     
     setUsername(usernameParam);
     setPassword(passwordParam);
-    setQrCode(qrParam);
   }, [searchParams, router]);
 
-  const handleConfirm = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setLoading(true);
     setError('');
 
@@ -43,34 +41,36 @@ export default function TwoFactorSetupPage() {
         twoFactorCode: code,
       };
       
-      console.log('Enviando datos para verificación 2FA:', requestData);
+      console.log('🔐 Enviando datos para verificación 2FA (two-factor):', requestData);
       
       const res = await loginUser(requestData);
       
-      console.log('Respuesta del servidor después de 2FA:', res);
+      console.log('📝 Respuesta COMPLETA del servidor (two-factor):', JSON.stringify(res, null, 2));
 
-            // En la función handleConfirm, cambia esta parte:
-      
+      // 🔥 NUEVA LÓGICA: Verificar si hay access_token (login exitoso)
       if (res.access_token) {
         console.log('✅ Login exitoso con 2FA - Token recibido');
         localStorage.setItem('token', res.access_token);
         localStorage.setItem('user', JSON.stringify(res.user_info));
         router.push('/dashboard');
-      } else if (res.requires2FA) {
+      } else if (res.requires2FA === true) {
         console.log('❌ Código 2FA incorrecto o inválido');
         setError('Código 2FA inválido. Verifica que el código sea correcto y que tu aplicación esté sincronizada.');
-      } else if (res.success) {
-        // Fallback
+      } else if (res.error) {
+        console.log('❌ Error del servidor:', res.error);
+        setError(res.error);
+      } else if (res.success === true) {
+        // Fallback por si acaso viene con success
         console.log('✅ Login exitoso con 2FA - Success flag');
         localStorage.setItem('token', res.access_token);
         localStorage.setItem('user', JSON.stringify(res.user_info));
         router.push('/dashboard');
       } else {
-        console.log('❌ Error en respuesta:', res);
-        setError(res.message || 'Error en la verificación 2FA');
+        console.log('❌ Error desconocido - respuesta completa:', res);
+        setError('Código inválido');
       }
     } catch (err) {
-      console.error('Error en verificación 2FA:', err);
+      console.error('💥 Error en verificación 2FA:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error de conexión';
       setError(errorMessage);
     } finally {
@@ -79,44 +79,23 @@ export default function TwoFactorSetupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="flex-1 w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg border border-gray-200 p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Configura tu 2FA</h1>
-          <p className="text-gray-600">Autenticación de dos factores</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Verificar Código 2FA</h1>
+          <p className="text-gray-600">Ingresa el código de tu aplicación autenticadora</p>
         </div>
 
-        <Alert type="info" className="mb-6">
-          <div>
-            <h3 className="font-medium text-blue-900 mb-2">Instrucciones:</h3>
-            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-              <li>Descarga Google Authenticator o Authy</li>
-              <li>Escanea el código QR</li>
-              <li>Ingresa el código de 6 dígitos que aparece</li>
-            </ol>
-          </div>
-        </Alert>
-
-        {qrCode && (
-          <div className="text-center mb-6">
-            <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
-              <img 
-                src={qrCode} 
-                alt="QR 2FA" 
-                className="w-48 h-48 mx-auto" 
-              />
-            </div>
-            <p className="text-xs text-gray-600 mt-2">Escanea con tu app de autenticación</p>
-          </div>
-        )}
-
-        <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <PasswordInput
             label="Código de Verificación"
+            name="code"
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="000000"
+            placeholder="Ingresa tu código de 6 dígitos"
+            className="text-center text-lg tracking-widest"
             maxLength={6}
+            showToggle={false}
             required
           />
 
@@ -127,29 +106,31 @@ export default function TwoFactorSetupPage() {
           )}
 
           <Button 
-            onClick={handleConfirm} 
+            type="submit"
             disabled={loading || code.length !== 6} 
             className="w-full h-12 text-base font-medium"
+            loading={loading}
           >
-            {loading ? 'Verificando...' : 'Confirmar Código'}
+            {loading ? 'Verificando...' : 'Verificar Código'}
           </Button>
 
           <Button 
             variant="outline"
+            type="button"
             onClick={() => router.push('/login')} 
             className="w-full h-10"
           >
             ← Volver al login
           </Button>
-        </div>
+        </form>
 
         {/* Debug info en desarrollo */}
         {process.env.NODE_ENV === 'development' && (
           <div className="mt-6 p-3 bg-gray-100 rounded text-xs">
             <p><strong>Debug:</strong></p>
             <p>Usuario: {username}</p>
-            <p>Código: {code} ({code.length}/6)</p>
-            <p>QR: {qrCode ? 'Disponible' : 'No disponible'}</p>
+            <p>Código: {'•'.repeat(code.length)} ({code.length}/6)</p>
+            <p>Longitud válida: {code.length === 6 ? '✅' : '❌'}</p>
           </div>
         )}
       </div>
