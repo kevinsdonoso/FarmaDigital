@@ -18,8 +18,7 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  
-   const validateForm = () => {
+  const validateForm = () => {
     const newErrors = {};
 
     if (!formData.dni.trim()) {
@@ -54,15 +53,13 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
- 
-  // ...validateForm, handleChange igual...
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
     setIsSubmitting(true);
     setLoading(true);
     setErrors({});
+    
     try {
       const result = await registerUser({
         dni: formData.dni,
@@ -70,9 +67,15 @@ export default function RegisterPage() {
         correo: formData.correo,
         password: formData.password
       });
+      
       if (result.success) {
-        alert('¡Registro exitoso! logeate');
-        router.push('/login');
+        setErrors({ 
+          success: '¡Registro exitoso! Redirigiendo al login...' 
+        });
+        
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
       } else {
         setErrors({ submit: result.message || 'Error en el registro' });
       }
@@ -84,13 +87,12 @@ export default function RegisterPage() {
     }
   };
 
-   const handleChange = (e) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    // Limpiar error específico cuando el usuario empiece a escribir
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -100,32 +102,44 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Registrarse en FarmaDigital
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          O{' '}
-          <button
-            type="button"
-            onClick={() => router.push('/login')}
-            className="font-medium text-blue-600 hover:text-blue-500"
-          >
-            inicia sesión si ya tienes cuenta
-          </button>
-        </p>
-      </div>
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <RegisterForm
-            formData={formData}
-            errors={errors}
-            onChange={handleChange}
-            onSubmit={handleSubmit}
-            loading={isSubmitting}
-          />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg border border-gray-200 p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Crear Cuenta</h1>
+          <p className="text-gray-600">Únete a FarmaDigital</p>
         </div>
+        
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            ¿Ya tienes cuenta?{' '}
+            <button 
+              onClick={() => router.push('/login')}
+              className="text-blue-600 hover:text-blue-500 font-medium"
+            >
+              Inicia sesión aquí
+            </button>
+          </p>
+        </div>
+
+
+        <RegisterForm
+          formData={formData}
+          errors={errors}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          loading={isSubmitting}
+        />
+
+        {/* Debug info en desarrollo */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6 p-3 bg-gray-100 rounded text-xs">
+            <p><strong>Debug:</strong></p>
+            <p>DNI: {formData.dni}</p>
+            <p>Nombre: {formData.nombre}</p>
+            <p>Correo: {formData.correo}</p>
+            <p>Contraseñas coinciden: {formData.password === formData.confirmPassword ? '✅' : '❌'}</p>
+          </div>
+        )}
       </div>
     </div>
   );

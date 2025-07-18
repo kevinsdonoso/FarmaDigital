@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { loginUser } from '@/lib/api';
+import { PasswordInput } from '@/components/ui/PasswordInput';
+import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
 
 export default function TwoFactorSetupPage() {
   const [code, setCode] = useState('');
@@ -34,7 +37,6 @@ export default function TwoFactorSetupPage() {
     setError('');
 
     try {
-      // Debug: mostrar exactamente qué se está enviando
       const requestData = {
         username,
         password,
@@ -47,17 +49,24 @@ export default function TwoFactorSetupPage() {
       
       console.log('Respuesta del servidor después de 2FA:', res);
 
-      if (res.success) {
-        console.log('Login exitoso con 2FA');
+            // En la función handleConfirm, cambia esta parte:
+      
+      if (res.access_token) {
+        console.log('✅ Login exitoso con 2FA - Token recibido');
         localStorage.setItem('token', res.access_token);
         localStorage.setItem('user', JSON.stringify(res.user_info));
         router.push('/dashboard');
       } else if (res.requires2FA) {
-        // Si sigue requiriendo 2FA, significa que el código es incorrecto
-        console.log('Código 2FA incorrecto o inválido');
+        console.log('❌ Código 2FA incorrecto o inválido');
         setError('Código 2FA inválido. Verifica que el código sea correcto y que tu aplicación esté sincronizada.');
+      } else if (res.success) {
+        // Fallback
+        console.log('✅ Login exitoso con 2FA - Success flag');
+        localStorage.setItem('token', res.access_token);
+        localStorage.setItem('user', JSON.stringify(res.user_info));
+        router.push('/dashboard');
       } else {
-        console.log('Error en respuesta:', res);
+        console.log('❌ Error en respuesta:', res);
         setError(res.message || 'Error en la verificación 2FA');
       }
     } catch (err) {
@@ -70,58 +79,80 @@ export default function TwoFactorSetupPage() {
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <h1 className="text-xl font-semibold mb-4">Configura tu 2FA</h1>
-      
-      <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-        <h3 className="font-medium text-blue-900 mb-2">Instrucciones:</h3>
-        <ol className="text-sm text-blue-800 space-y-1">
-          <li>1. Descarga Google Authenticator o Authy</li>
-          <li>2. Escanea el código QR</li>
-          <li>3. Ingresa el código de 6 dígitos que aparece</li>
-        </ol>
-      </div>
-
-      {qrCode && (
-        <div className="text-center mb-4">
-          <img src={qrCode} alt="QR 2FA" className="mb-2 w-[200px] h-[200px] mx-auto border" />
-          <p className="text-xs text-gray-600">Escanea con tu app de autenticación</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg border border-gray-200 p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Configura tu 2FA</h1>
+          <p className="text-gray-600">Autenticación de dos factores</p>
         </div>
-      )}
 
-      <input
-        type="text"
-        placeholder="Código 2FA (6 dígitos)"
-        value={code}
-        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-        className="border p-2 w-full mb-2 text-center text-lg font-mono"
-        maxLength={6}
-        required
-      />
+        <Alert type="info" className="mb-6">
+          <div>
+            <h3 className="font-medium text-blue-900 mb-2">Instrucciones:</h3>
+            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+              <li>Descarga Google Authenticator o Authy</li>
+              <li>Escanea el código QR</li>
+              <li>Ingresa el código de 6 dígitos que aparece</li>
+            </ol>
+          </div>
+        </Alert>
 
-      {error && <div className="text-red-600 text-sm mb-2 p-2 bg-red-50 rounded">{error}</div>}
+        {qrCode && (
+          <div className="text-center mb-6">
+            <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
+              <img 
+                src={qrCode} 
+                alt="QR 2FA" 
+                className="w-48 h-48 mx-auto" 
+              />
+            </div>
+            <p className="text-xs text-gray-600 mt-2">Escanea con tu app de autenticación</p>
+          </div>
+        )}
 
-      {/* Debug info */}
-      <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
-        <p><strong>Debug:</strong></p>
-        <p>Usuario: {username}</p>
-        <p>Código: {code} ({code.length}/6)</p>
+        <div className="space-y-6">
+          <PasswordInput
+            label="Código de Verificación"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="000000"
+            maxLength={6}
+            required
+          />
+
+          {error && (
+            <Alert type="error">
+              {error}
+            </Alert>
+          )}
+
+          <Button 
+            onClick={handleConfirm} 
+            disabled={loading || code.length !== 6} 
+            className="w-full h-12 text-base font-medium"
+          >
+            {loading ? 'Verificando...' : 'Confirmar Código'}
+          </Button>
+
+          <Button 
+            variant="outline"
+            onClick={() => router.push('/login')} 
+            className="w-full h-10"
+          >
+            ← Volver al login
+          </Button>
+        </div>
+
+        {/* Debug info en desarrollo */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6 p-3 bg-gray-100 rounded text-xs">
+            <p><strong>Debug:</strong></p>
+            <p>Usuario: {username}</p>
+            <p>Código: {code} ({code.length}/6)</p>
+            <p>QR: {qrCode ? 'Disponible' : 'No disponible'}</p>
+          </div>
+        )}
       </div>
-
-      <button 
-        onClick={handleConfirm} 
-        disabled={loading || code.length !== 6} 
-        className="bg-green-600 text-white px-4 py-2 rounded w-full disabled:opacity-50 mb-2"
-      >
-        {loading ? 'Verificando...' : 'Confirmar Código'}
-      </button>
-      
-      <button 
-        onClick={() => router.push('/login')} 
-        className="text-blue-600 hover:text-blue-800 w-full text-sm"
-      >
-        ← Volver al login
-      </button>
     </div>
   );
 }
