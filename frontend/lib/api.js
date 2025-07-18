@@ -128,6 +128,7 @@ export async function loginUser(credentials) {
     
     const data = await response.json();
     console.log('Datos de respuesta del login:', data);
+    return data;
 
     // ✅ FLUJO CORRECTO: Status 400 significa "Necesita 2FA"
     if (response.status === 400) {
