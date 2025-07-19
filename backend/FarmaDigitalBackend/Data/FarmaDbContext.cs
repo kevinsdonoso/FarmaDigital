@@ -21,6 +21,9 @@ namespace FarmaDigitalBackend.Data
         public DbSet<LogAuditoria> LogsAuditoria { get; set; }
         public DbSet<AlertaSeguridad> AlertasSeguridad { get; set; }
         public DbSet<TwoFactorAuth> TwoFactorAuths { get; set; }
+        public DbSet<Tarjeta> Tarjetas { get; set; }
+
+        
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

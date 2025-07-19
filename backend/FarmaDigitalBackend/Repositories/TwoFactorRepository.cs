@@ -14,10 +14,9 @@ namespace FarmaDigitalBackend.Repositories
             _context = context;
         }
 
-        public async Task<TwoFactorAuth?> GetByUserId(int userId)
+        public async Task<TwoFactorAuth?> GetByUserIdAsync(int userId)
         {
             return await _context.TwoFactorAuths
-                .Include(t => t.Usuario)
                 .FirstOrDefaultAsync(t => t.IdUsuario == userId);
         }
 
@@ -37,7 +36,7 @@ namespace FarmaDigitalBackend.Repositories
 
         public async Task<bool> Delete(int userId)
         {
-            var twoFactor = await GetByUserId(userId);
+            var twoFactor = await GetByUserIdAsync(userId); // <-- usa el método correcto
             if (twoFactor != null)
             {
                 _context.TwoFactorAuths.Remove(twoFactor);

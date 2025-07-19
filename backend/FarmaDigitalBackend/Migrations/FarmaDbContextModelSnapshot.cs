@@ -101,19 +101,16 @@ namespace FarmaDigitalBackend.Migrations
 
             modelBuilder.Entity("FarmaDigitalBackend.Models.DetalleFactura", b =>
                 {
-                    b.Property<int>("IdDetalleFactura")
+                    b.Property<int>("IdDetalle")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id_detalle_factura");
+                        .HasColumnName("id_detalle");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdDetalleFactura"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdDetalle"));
 
                     b.Property<int>("Cantidad")
                         .HasColumnType("integer")
                         .HasColumnName("cantidad");
-
-                    b.Property<int?>("FacturaIdFactura")
-                        .HasColumnType("integer");
 
                     b.Property<int>("IdFactura")
                         .HasColumnType("integer")
@@ -131,9 +128,11 @@ namespace FarmaDigitalBackend.Migrations
                         .HasColumnType("decimal(10,2)")
                         .HasColumnName("subtotal");
 
-                    b.HasKey("IdDetalleFactura");
+                    b.HasKey("IdDetalle");
 
-                    b.HasIndex("FacturaIdFactura");
+                    b.HasIndex("IdFactura");
+
+                    b.HasIndex("IdProducto");
 
                     b.ToTable("DetallesFactura");
                 });
@@ -147,11 +146,11 @@ namespace FarmaDigitalBackend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdFactura"));
 
-                    b.Property<string>("EstadoPago")
+                    b.Property<string>("Estado")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasColumnName("estado_pago");
+                        .HasColumnName("estado");
 
                     b.Property<DateTime>("FechaEmision")
                         .HasColumnType("timestamp with time zone")
@@ -165,21 +164,15 @@ namespace FarmaDigitalBackend.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("id_usuario");
 
-                    b.Property<decimal>("Iva")
+                    b.Property<decimal>("Impuestos")
                         .HasColumnType("decimal(10,2)")
-                        .HasColumnName("iva");
+                        .HasColumnName("impuestos");
 
-                    b.Property<string>("MetodoPago")
+                    b.Property<string>("NumeroFactura")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("metodo_pago");
-
-                    b.Property<string>("ReferenciaPago")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("referencia_pago");
+                        .HasColumnName("numero_factura");
 
                     b.Property<decimal>("Subtotal")
                         .HasColumnType("decimal(10,2)")
@@ -190,10 +183,6 @@ namespace FarmaDigitalBackend.Migrations
                         .HasColumnName("total");
 
                     b.HasKey("IdFactura");
-
-                    b.HasIndex("IdOrden");
-
-                    b.HasIndex("IdUsuario");
 
                     b.ToTable("Facturas");
                 });
@@ -272,6 +261,10 @@ namespace FarmaDigitalBackend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdOrden"));
 
+                    b.Property<DateTime?>("ActualizadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("actualizado_en");
+
                     b.Property<DateTime>("CreadoEn")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("creado_en");
@@ -296,11 +289,13 @@ namespace FarmaDigitalBackend.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("metodo_pago");
 
-                    b.Property<decimal?>("Total")
+                    b.Property<decimal>("Total")
                         .HasColumnType("decimal(10,2)")
                         .HasColumnName("total");
 
                     b.HasKey("IdOrden");
+
+                    b.HasIndex("IdUsuario");
 
                     b.ToTable("Ordenes");
                 });
@@ -384,6 +379,65 @@ namespace FarmaDigitalBackend.Migrations
                     b.HasKey("IdRol");
 
                     b.ToTable("Roles");
+                });
+
+            modelBuilder.Entity("FarmaDigitalBackend.Models.Tarjeta", b =>
+                {
+                    b.Property<int>("IdTarjeta")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id_tarjeta");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdTarjeta"));
+
+                    b.Property<bool>("Activa")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activa");
+
+                    b.Property<DateTime>("CreadaEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("creada_en");
+
+                    b.Property<bool>("EsPrincipal")
+                        .HasColumnType("boolean")
+                        .HasColumnName("es_principal");
+
+                    b.Property<string>("FechaExpiracion")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)")
+                        .HasColumnName("fecha_expiracion");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("integer")
+                        .HasColumnName("id_usuario");
+
+                    b.Property<string>("NombreTitular")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("nombre_titular");
+
+                    b.Property<string>("NumeroEncriptado")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("numero_encriptado");
+
+                    b.Property<string>("TipoTarjeta")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("tipo_tarjeta");
+
+                    b.Property<string>("UltimosDigitos")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("ultimos_digitos");
+
+                    b.HasKey("IdTarjeta");
+
+                    b.ToTable("Tarjetas");
                 });
 
             modelBuilder.Entity("FarmaDigitalBackend.Models.TwoFactorAuth", b =>
@@ -489,26 +543,30 @@ namespace FarmaDigitalBackend.Migrations
 
             modelBuilder.Entity("FarmaDigitalBackend.Models.DetalleFactura", b =>
                 {
-                    b.HasOne("FarmaDigitalBackend.Models.Factura", null)
-                        .WithMany("DetallesFactura")
-                        .HasForeignKey("FacturaIdFactura");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Factura", b =>
-                {
-                    b.HasOne("FarmaDigitalBackend.Models.Orden", "Orden")
+                    b.HasOne("FarmaDigitalBackend.Models.Factura", "Factura")
                         .WithMany()
-                        .HasForeignKey("IdOrden")
+                        .HasForeignKey("IdFactura")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("FarmaDigitalBackend.Models.Producto", "Producto")
+                        .WithMany()
+                        .HasForeignKey("IdProducto")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Factura");
+
+                    b.Navigation("Producto");
+                });
+
+            modelBuilder.Entity("FarmaDigitalBackend.Models.Orden", b =>
+                {
                     b.HasOne("FarmaDigitalBackend.Models.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("IdUsuario")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Orden");
 
                     b.Navigation("Usuario");
                 });
@@ -522,11 +580,6 @@ namespace FarmaDigitalBackend.Migrations
                         .IsRequired();
 
                     b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("FarmaDigitalBackend.Models.Factura", b =>
-                {
-                    b.Navigation("DetallesFactura");
                 });
 #pragma warning restore 612, 618
         }

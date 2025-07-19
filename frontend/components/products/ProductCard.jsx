@@ -1,12 +1,23 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCart } from "@/components/cart/CartContext";
 
 export default function ProductCard({ producto }) {
   const router = useRouter();
+  const { cart, addToCart } = useCart();
+  const [cantidad, setCantidad] = useState(1);
 
-  const handleComprarClick = () => {
-    router.push(`/facturacion/${producto.idProducto}`);
+  // Verifica si el producto ya está en el carrito
+  const yaEnCarrito = cart.some(item => item.id === producto.idProducto);
+
+  const handleAgregarCarrito = () => {
+    addToCart({
+      id: producto.idProducto,
+      nombre: producto.nombre,
+      precio: producto.precio,
+      cantidad: cantidad
+    });
   };
 
   return (
@@ -15,13 +26,28 @@ export default function ProductCard({ producto }) {
         <h3 className="text-xl font-bold">{producto.nombre}</h3>
         <p className="text-gray-600 mt-2">{producto.descripcion}</p>
       </div>
-      <div className="mt-4">
+      <div className="mt-4 space-y-3">
         <p className="text-lg font-semibold text-blue-600">${producto.precio.toFixed(2)}</p>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Cantidad:</label>
+          <input
+            type="number"
+            min={1}
+            value={cantidad}
+            onChange={e => setCantidad(Number(e.target.value))}
+            className="border rounded-md px-2 py-1 w-20 text-center"
+          />
+        </div>
         <button
-          onClick={handleComprarClick}
-          className="w-full mt-4 bg-green-500 text-white py-2 rounded hover:bg-green-600"
+          onClick={handleAgregarCarrito}
+          disabled={yaEnCarrito}
+          className={`w-full py-2 px-4 rounded-md transition-colors ${
+            yaEnCarrito 
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-green-500 hover:bg-green-600'
+          } text-white`}
         >
-          Comprar
+          {yaEnCarrito ? 'Agregado al carrito' : 'Agregar al carrito'}
         </button>
       </div>
     </div>

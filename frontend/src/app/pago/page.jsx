@@ -1,139 +1,285 @@
-'use client';
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { createFactura } from '@/lib/api';
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCart } from "@/components/cart/CartContext";
+import { getTarjetas, procesarCompra } from "@/lib/api";
 
 export default function PagoPage() {
+  const { cart, total, clearCart } = useCart();
   const router = useRouter();
-  const [factura, setFactura] = useState(null);
-
-  const [numero, setNumero] = useState('');
-  const [expiracion, setExpiracion] = useState('');
-  const [cvv, setCvv] = useState('');
+  const [tarjetas, setTarjetas] = useState([]);
+  const [metodoPago, setMetodoPago] = useState("tarjeta_existente");
+  const [idTarjeta, setIdTarjeta] = useState("");
+  const [nuevaTarjeta, setNuevaTarjeta] = useState({
+    numeroTarjeta: "",
+    fechaExpiracion: "",
+    cvv: "",
+    nombreTitular: "",
+    esPrincipal: false
+  });
+  const [codigo2FA, setCodigo2FA] = useState("");
   const [guardarTarjeta, setGuardarTarjeta] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const [error, setError] = useState("");
+  
   useEffect(() => {
-    const temp = localStorage.getItem('facturaTemp');
-    if (temp) {
-      setFactura(JSON.parse(temp));
-    } else {
-      router.push('/dashboard');
-    }
-  }, [router]);
-
-  const sanitize = (text) =>
-    String(text)
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[<>"'`|\\{}]/g, '')
-      .trim()
-      .slice(0, 100);
-
-  const handleEnviarFactura = async () => {
-    setError('');
-
-    const regexExp = /^(0[1-9]|1[0-2])\/\d{2}$/;
-    const numeroSan = numero.replace(/\D/g, '');
-    const cvvSan = cvv.replace(/\D/g, '');
-
-    if (numeroSan.length !== 16) {
-      setError('El número de tarjeta debe tener 16 dígitos.');
+    if (!cart || cart.length === 0) {
+      router.push('/carrito');
       return;
     }
-    if (!regexExp.test(expiracion)) {
-      setError('La fecha de expiración debe estar en formato MM/YY.');
-      return;
-    }
-    if (cvvSan.length < 3 || cvvSan.length > 4) {
-      setError('El CVV debe tener entre 3 y 4 dígitos.');
-      return;
-    }
+    fetchTarjetas();
+  }, [cart, router]);
 
-    const facturaData = {
-      ...factura,
-      metodoPago: sanitize('tarjeta_credito'),
-      referenciaPago: sanitize('ref-mock-123'),
-      ultimos4Tarjeta: sanitize(numeroSan.slice(-4)),
-      numeroTarjeta: sanitize(numeroSan),
-      fechaExpiracion: sanitize(expiracion),
-      cvv: sanitize(cvvSan),
-      guardarTarjeta: guardarTarjeta
-    };
-
-    console.log('📦 Enviando factura completa:', facturaData);
-
-    setLoading(true);
+  const fetchTarjetas = async () => {
     try {
-      await createFactura(facturaData);
-      localStorage.removeItem('facturaTemp');
-      router.push('/historialCompras');
+      const data = await getTarjetas();
+      if (data.success) {
+        setTarjetas(data.data);
+        if (data.data.length === 0) {
+          setMetodoPago("nueva_tarjeta");
+        }
+      }
     } catch (err) {
-      console.error('❌ Error al crear factura:', err);
-      setError('No se pudo generar la factura');
+      console.error("Error al cargar tarjetas:", err);
+      setError("No se pudieron cargar las tarjetas guardadas");
+      setMetodoPago("nueva_tarjeta");
+    }
+  };
+
+  const handlePagar = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    if (!codigo2FA) {
+      setError("El código de verificación es requerido");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const productos = cart.map(item => ({
+        idProducto: item.id,
+        cantidad: item.cantidad
+      }));
+
+      let payload;
+      if (metodoPago === "tarjeta_existente") {
+        if (!idTarjeta) {
+          throw new Error("Por favor seleccione una tarjeta");
+        }
+        payload = {
+          productos,
+          metodoPago: "tarjeta_existente",
+          idTarjeta,
+          codigo2FA
+        };
+      } else {
+        if (!nuevaTarjeta.numeroTarjeta || !nuevaTarjeta.fechaExpiracion || 
+            !nuevaTarjeta.cvv || !nuevaTarjeta.nombreTitular) {
+          throw new Error("Por favor complete todos los campos de la tarjeta");
+        }
+        payload = {
+          productos,
+          metodoPago: "nueva_tarjeta",
+          nuevaTarjeta: {
+            ...nuevaTarjeta,
+            codigo2FA
+          },
+          guardarTarjeta
+        };
+      }
+
+      const data = await procesarCompra(payload);
+      if (!data.success) {
+        throw new Error(data.message || "Error al procesar el pago");
+      }
+
+      clearCart();
+      router.push(`/facturacion/${data.idCompra}`);
+    } catch (err) {
+      setError(err.message || "Error al procesar el pago");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!factura) return null;
+  if (!cart || cart.length === 0) {
+    return null;
+  }
 
   return (
-    <main className="max-w-md mx-auto p-4 border rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">Pago de: {factura.nombreProducto}</h1>
-      <p className="text-sm text-gray-600 mb-2">Total a pagar: ${factura.total.toFixed(2)}</p>
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-8">Método de Pago</h1>
+      
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <form onSubmit={handlePagar} className="space-y-6">
+            {tarjetas.length > 0 && (
+              <div className="flex gap-4 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setMetodoPago("tarjeta_existente")}
+                  className={`flex-1 p-4 border rounded-lg transition-colors ${
+                    metodoPago === "tarjeta_existente" ? "border-blue-500 bg-blue-50" : "border-gray-200"
+                  }`}
+                >
+                  <h3 className="font-medium">Usar tarjeta guardada</h3>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMetodoPago("nueva_tarjeta")}
+                  className={`flex-1 p-4 border rounded-lg transition-colors ${
+                    metodoPago === "nueva_tarjeta" ? "border-blue-500 bg-blue-50" : "border-gray-200"
+                  }`}
+                >
+                  <h3 className="font-medium">Usar nueva tarjeta</h3>
+                </button>
+              </div>
+            )}
 
-      <div className="space-y-4">
-        <input
-          type="text"
-          placeholder="Número de tarjeta"
-          value={numero}
-          onChange={(e) =>
-            setNumero(e.target.value.replace(/\D/g, '').slice(0, 16))
-          }
-          className="border rounded w-full px-3 py-2"
-          maxLength={16}
-        />
-        <input
-          type="text"
-          placeholder="MM/YY"
-          value={expiracion}
-          onChange={(e) =>
-            setExpiracion(
-              e.target.value.replace(/[^\d/]/g, '').slice(0, 5)
-            )
-          }
-          className="border rounded w-full px-3 py-2"
-        />
-        <input
-          type="text"
-          placeholder="CVV"
-          value={cvv}
-          onChange={(e) =>
-            setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))
-          }
-          className="border rounded w-full px-3 py-2"
-        />
-        <label className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={guardarTarjeta}
-            onChange={(e) => setGuardarTarjeta(e.target.checked)}
-          />
-          <span className="text-sm">Guardar tarjeta para compras futuras</span>
-        </label>
+            {metodoPago === "tarjeta_existente" && tarjetas.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="font-medium">Seleccione una tarjeta:</h3>
+                <div className="space-y-2">
+                  {tarjetas.map((tarjeta) => (
+                    <div
+                      key={tarjeta.idTarjeta}
+                      onClick={() => setIdTarjeta(tarjeta.idTarjeta)}
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                        idTarjeta === tarjeta.idTarjeta
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{tarjeta.nombreTitular}</p>
+                          <p className="text-sm text-gray-600">
+                            {tarjeta.tipoTarjeta} terminada en {tarjeta.ultimosDigitos}
+                          </p>
+                          <p className="text-sm text-gray-600">Expira: {tarjeta.fechaExpiracion}</p>
+                        </div>
+                        {tarjeta.esPrincipal && (
+                          <span className="text-sm text-blue-600">Principal</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {metodoPago === "nueva_tarjeta" && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Número de tarjeta</label>
+                  <input
+                    type="text"
+                    value={nuevaTarjeta.numeroTarjeta}
+                    onChange={(e) => setNuevaTarjeta({ ...nuevaTarjeta, numeroTarjeta: e.target.value })}
+                    className="mt-1 block w-full border rounded-md px-3 py-2"
+                    placeholder="4532 1234 5678 1234"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Fecha de expiración</label>
+                    <input
+                      type="text"
+                      value={nuevaTarjeta.fechaExpiracion}
+                      onChange={(e) => setNuevaTarjeta({ ...nuevaTarjeta, fechaExpiracion: e.target.value })}
+                      className="mt-1 block w-full border rounded-md px-3 py-2"
+                      placeholder="MM/AAAA"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">CVV</label>
+                    <input
+                      type="password"
+                      maxLength="4"
+                      value={nuevaTarjeta.cvv}
+                      onChange={(e) => setNuevaTarjeta({ ...nuevaTarjeta, cvv: e.target.value })}
+                      className="mt-1 block w-full border rounded-md px-3 py-2"
+                      placeholder="123"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Nombre del titular</label>
+                  <input
+                    type="text"
+                    value={nuevaTarjeta.nombreTitular}
+                    onChange={(e) => setNuevaTarjeta({ ...nuevaTarjeta, nombreTitular: e.target.value })}
+                    className="mt-1 block w-full border rounded-md px-3 py-2"
+                    placeholder="Como aparece en la tarjeta"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={guardarTarjeta}
+                      onChange={(e) => setGuardarTarjeta(e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-600">Guardar esta tarjeta</span>
+                  </label>
+                  {guardarTarjeta && (
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={nuevaTarjeta.esPrincipal}
+                        onChange={(e) => setNuevaTarjeta({ ...nuevaTarjeta, esPrincipal: e.target.checked })}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="ml-2 text-sm text-gray-600">Establecer como tarjeta principal</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4 pt-4 border-t">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Código de verificación (2FA)</label>
+                <input
+                  type="text"
+                  value={codigo2FA}
+                  onChange={(e) => setCodigo2FA(e.target.value)}
+                  className="mt-1 block w-full border rounded-md px-3 py-2"
+                  placeholder="Ingrese el código de verificación"
+                  required
+                />
+              </div>
+
+              {error && (
+                <div className="text-red-600 text-sm p-2 bg-red-50 rounded">{error}</div>
+              )}
+
+              <div className="flex justify-between items-center pt-4">
+                <div className="text-lg">
+                  <span className="font-medium">Total:</span>
+                  <span className="ml-2 font-bold">${total.toFixed(2)}</span>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors ${
+                    loading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {loading ? "Procesando..." : "Pagar ahora"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
-
-      {error && <p className="text-red-600 mt-2">{error}</p>}
-
-      <button
-        onClick={handleEnviarFactura}
-        disabled={loading}
-        className="mt-6 w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
-      >
-        {loading ? 'Enviando factura...' : 'Confirmar y pagar'}
-      </button>
-    </main>
+    </div>
   );
 }

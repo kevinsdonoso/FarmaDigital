@@ -20,13 +20,11 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
     if (deleteModal.producto) {
       onDeleteProduct(deleteModal.producto.id_producto);
       setDeleteModal({ isOpen: false, producto: null });
-      // El modal se cierra automáticamente y ya no necesitamos alert
     }
   };
 
   const handleEditSave = (formData) => {
     if (editModal.producto && onEditProduct) {
-      // Llamar a la función de editar del componente padre
       onEditProduct(editModal.producto.id_producto, formData);
       setEditModal({ isOpen: false, producto: null });
     }

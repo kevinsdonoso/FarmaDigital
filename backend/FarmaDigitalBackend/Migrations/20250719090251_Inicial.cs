@@ -28,6 +28,26 @@ namespace FarmaDigitalBackend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Facturas",
+                columns: table => new
+                {
+                    id_factura = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_orden = table.Column<int>(type: "integer", nullable: false),
+                    id_usuario = table.Column<int>(type: "integer", nullable: false),
+                    numero_factura = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    fecha_emision = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    subtotal = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
+                    impuestos = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
+                    total = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
+                    estado = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Facturas", x => x.id_factura);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ItemsCarrito",
                 columns: table => new
                 {
@@ -57,24 +77,6 @@ namespace FarmaDigitalBackend.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_LogsAuditoria", x => x.id_log);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Ordenes",
-                columns: table => new
-                {
-                    id_orden = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    id_usuario = table.Column<int>(type: "integer", nullable: false),
-                    id_carrito = table.Column<int>(type: "integer", nullable: true),
-                    total = table.Column<decimal>(type: "numeric(10,2)", nullable: true),
-                    metodo_pago = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    estado = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    creado_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Ordenes", x => x.id_orden);
                 });
 
             migrationBuilder.CreateTable(
@@ -112,6 +114,27 @@ namespace FarmaDigitalBackend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Tarjetas",
+                columns: table => new
+                {
+                    id_tarjeta = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_usuario = table.Column<int>(type: "integer", nullable: false),
+                    ultimos_digitos = table.Column<string>(type: "character varying(4)", maxLength: 4, nullable: false),
+                    numero_encriptado = table.Column<string>(type: "text", nullable: false),
+                    tipo_tarjeta = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    fecha_expiracion = table.Column<string>(type: "character varying(7)", maxLength: 7, nullable: false),
+                    nombre_titular = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    es_principal = table.Column<bool>(type: "boolean", nullable: false),
+                    activa = table.Column<bool>(type: "boolean", nullable: false),
+                    creada_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Tarjetas", x => x.id_tarjeta);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Usuarios",
                 columns: table => new
                 {
@@ -128,6 +151,35 @@ namespace FarmaDigitalBackend.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Usuarios", x => x.id_usuario);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DetallesFactura",
+                columns: table => new
+                {
+                    id_detalle = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    id_factura = table.Column<int>(type: "integer", nullable: false),
+                    id_producto = table.Column<int>(type: "integer", nullable: false),
+                    cantidad = table.Column<int>(type: "integer", nullable: false),
+                    precio_unitario = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
+                    subtotal = table.Column<decimal>(type: "numeric(10,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DetallesFactura", x => x.id_detalle);
+                    table.ForeignKey(
+                        name: "FK_DetallesFactura_Facturas_id_factura",
+                        column: x => x.id_factura,
+                        principalTable: "Facturas",
+                        principalColumn: "id_factura",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_DetallesFactura_Productos_id_producto",
+                        column: x => x.id_producto,
+                        principalTable: "Productos",
+                        principalColumn: "id_producto",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -155,32 +207,24 @@ namespace FarmaDigitalBackend.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Facturas",
+                name: "Ordenes",
                 columns: table => new
                 {
-                    id_factura = table.Column<int>(type: "integer", nullable: false)
+                    id_orden = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    id_orden = table.Column<int>(type: "integer", nullable: false),
                     id_usuario = table.Column<int>(type: "integer", nullable: false),
-                    fecha_emision = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    subtotal = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
-                    iva = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
+                    id_carrito = table.Column<int>(type: "integer", nullable: true),
                     total = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
                     metodo_pago = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    referencia_pago = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    estado_pago = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
+                    estado = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    creado_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    actualizado_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Facturas", x => x.id_factura);
+                    table.PrimaryKey("PK_Ordenes", x => x.id_orden);
                     table.ForeignKey(
-                        name: "FK_Facturas_Ordenes_id_orden",
-                        column: x => x.id_orden,
-                        principalTable: "Ordenes",
-                        principalColumn: "id_orden",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Facturas_Usuarios_id_usuario",
+                        name: "FK_Ordenes_Usuarios_id_usuario",
                         column: x => x.id_usuario,
                         principalTable: "Usuarios",
                         principalColumn: "id_usuario",
@@ -210,47 +254,24 @@ namespace FarmaDigitalBackend.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "DetallesFactura",
-                columns: table => new
-                {
-                    id_detalle_factura = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    id_factura = table.Column<int>(type: "integer", nullable: false),
-                    id_producto = table.Column<int>(type: "integer", nullable: false),
-                    cantidad = table.Column<int>(type: "integer", nullable: false),
-                    precio_unitario = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
-                    subtotal = table.Column<decimal>(type: "numeric(10,2)", nullable: false),
-                    FacturaIdFactura = table.Column<int>(type: "integer", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DetallesFactura", x => x.id_detalle_factura);
-                    table.ForeignKey(
-                        name: "FK_DetallesFactura_Facturas_FacturaIdFactura",
-                        column: x => x.FacturaIdFactura,
-                        principalTable: "Facturas",
-                        principalColumn: "id_factura");
-                });
-
             migrationBuilder.CreateIndex(
                 name: "IX_AlertasSeguridad_id_usuario",
                 table: "AlertasSeguridad",
                 column: "id_usuario");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DetallesFactura_FacturaIdFactura",
+                name: "IX_DetallesFactura_id_factura",
                 table: "DetallesFactura",
-                column: "FacturaIdFactura");
+                column: "id_factura");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Facturas_id_orden",
-                table: "Facturas",
-                column: "id_orden");
+                name: "IX_DetallesFactura_id_producto",
+                table: "DetallesFactura",
+                column: "id_producto");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Facturas_id_usuario",
-                table: "Facturas",
+                name: "IX_Ordenes_id_usuario",
+                table: "Ordenes",
                 column: "id_usuario");
 
             migrationBuilder.CreateIndex(
@@ -278,10 +299,13 @@ namespace FarmaDigitalBackend.Migrations
                 name: "LogsAuditoria");
 
             migrationBuilder.DropTable(
-                name: "Productos");
+                name: "Ordenes");
 
             migrationBuilder.DropTable(
                 name: "Roles");
+
+            migrationBuilder.DropTable(
+                name: "Tarjetas");
 
             migrationBuilder.DropTable(
                 name: "TwoFactorAuths");
@@ -290,7 +314,7 @@ namespace FarmaDigitalBackend.Migrations
                 name: "Facturas");
 
             migrationBuilder.DropTable(
-                name: "Ordenes");
+                name: "Productos");
 
             migrationBuilder.DropTable(
                 name: "Usuarios");

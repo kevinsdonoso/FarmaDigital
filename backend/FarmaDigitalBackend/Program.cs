@@ -45,6 +45,7 @@ builder.Services.AddAuthentication(x =>
 builder.Services.AddSingleton<IJwtService>(provider =>
     new JwtService(key));
 
+
 // Database
 builder.Services.AddDbContext<FarmaDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -58,6 +59,7 @@ builder.Services.AddControllers(options =>
     // Requiere autorización por defecto en todos los endpoints
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AuthorizeFilter());
 });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

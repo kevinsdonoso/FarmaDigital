@@ -9,7 +9,7 @@ import { Button } from './Button';
 
 const Header = () => {
   const { state: authState, logout, switchUser } = useAuth();
-  const { state: cartState } = useCart();
+  const { cart } = useCart();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -19,12 +19,14 @@ const Header = () => {
 
   if (!authState.user) return null;
 
+  const cartCount = cart.reduce((sum, item) => sum + item.cantidad, 0);
+
   const getNavigationItems = () => {
     switch (authState.user?.role) {
       case 'cliente':
         return [
           { href: '/dashboard', label: 'Productos', icon: Package },
-          { href: '/carrito', label: `Carrito (${cartState.items.length})`, icon: ShoppingCart },
+          { href: '/carrito', label: `Carrito (${cartCount})`, icon: ShoppingCart },
           { href: '/historialCompras', label: 'Historial', icon: FileText },
         ];
       case 'vendedor':

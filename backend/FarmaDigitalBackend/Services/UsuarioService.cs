@@ -4,11 +4,11 @@ using FarmaDigitalBackend.Services.Interfaces;
 
 namespace FarmaDigitalBackend.Services
 {
-    public class UserService : IUserService
+    public class UsuarioService : IUsuarioService
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IUsuarioRepository _userRepository;
 
-        public UserService(IUserRepository userRepository)
+        public UsuarioService(IUsuarioRepository userRepository)
         {
             _userRepository = userRepository;
         }
