@@ -182,3 +182,81 @@ export async function loginUser(credentials) {
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+// Crear una nueva factura con datos completos del usuario y tarjeta
+export async function createFactura(facturaData) {
+  const token = localStorage.getItem('token'); // Obtén tu JWT (asegúrate que esté vigente)
+
+  try {
+    const response = await fetch(`${BASE_URL}/api/facturas`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        Authorization: `Bearer ${token}` // Si el backend requiere autenticación
+      },
+      body: JSON.stringify(facturaData)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Captura errores específicos del backend
+      throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    // Factura procesada correctamente
+    return {
+      success: true,
+      factura: data
+    };
+  } catch (error) {
+    console.error('Error al crear factura:', error);
+    throw error;
+  }
+}
+//Obtener productos 
+export async function getProducts() {
+  try {
+    const response = await fetch(`${BASE_URL}/api/productos?activo=true`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error al obtener productos:', error);
+    throw error;
+  }
+}
+
+
+//Consultar producto por ID
+export async function getProductoById(id) {
+  try {
+    const response = await fetch(`${BASE_URL}/api/productos/producto?id=${id}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error al obtener producto:', error);
+    throw error;
+  }
+}
