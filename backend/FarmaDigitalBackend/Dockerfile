@@ -9,14 +9,14 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# 👇 Ruta corregida al .csproj
-COPY FarmaDigitalBackend/FarmaDigitalBackend.csproj ./FarmaDigitalBackend/
-WORKDIR /src/FarmaDigitalBackend
+# Copiar el archivo .csproj y restaurar dependencias
+COPY FarmaDigitalBackend.csproj ./
 RUN dotnet restore
 
-# 👇 Copia todo el proyecto
-COPY FarmaDigitalBackend/ ./
+# Copiar todo el contenido del proyecto
+COPY . ./
 
+# Compilar el proyecto
 RUN dotnet build "FarmaDigitalBackend.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Etapa de publicación
