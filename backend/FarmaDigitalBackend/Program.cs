@@ -64,14 +64,20 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// USAR CORS AQUÍ (IMPORTANTE: ANTES DE UseAuthentication)
+// USAR CORS AQUÍ (ANTES de Authentication)
 app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// ✅ APLICAR MIGRACIONES AUTOMÁTICAMENTE AL INICIAR
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<FarmaDbContext>();
+    dbContext.Database.Migrate(); // <-- Esto crea las tablas si no existen
+}
 
 app.Run();
