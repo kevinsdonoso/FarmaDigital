@@ -1,8 +1,12 @@
-﻿# Base de ejecución (runtime)
+﻿# ✅ Argumentos de compilación
+ARG BACKEND_PORT=5245
+ARG BACKEND_HTTPS_PORT=7053
+
+# Base de ejecución (runtime)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
+EXPOSE ${BACKEND_PORT} 
+EXPOSE ${BACKEND_HTTPS_PORT} 
 
 # Etapa de compilación
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build

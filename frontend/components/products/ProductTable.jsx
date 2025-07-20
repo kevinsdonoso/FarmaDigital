@@ -1,9 +1,9 @@
 'use client'
 import React, { useState } from 'react';
 import { Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Modal } from '../ui/Modal';
-import { updateProducto } from '@/lib/api'; // ✅ Cambiar a updateProducto como tienes en api.js
+import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { updateProducto } from '@/lib/api';
 
 export default function ProductTable({ productos, onDeleteProduct, onEditProduct }) {
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, producto: null });

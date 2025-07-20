@@ -3,9 +3,9 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LogOut, ShoppingCart, User, Package, FileText, Plus, ChevronDown } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import { useCart } from '../../hooks/useCart';
-import { Button } from './Button';
+import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
+import { Button } from '@/components/ui/Button';
 
 const Header = ({ title, subtitle, showUserSwitcher = false }) => {
   const { state: authState, logout, switchUser } = useAuth();

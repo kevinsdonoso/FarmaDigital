@@ -1,4 +1,4 @@
-import CookiesKeys, { cookieStorage } from "./cookies";
+import CookiesKeys, { cookieStorage } from "@/lib/cookies";
 
 
 export const getToken = () => {

@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../hooks/useAuth';
-import { registerUser } from '../../../lib/api';
-import { RegisterForm } from '../../../components/auth/RegisterForm';
+import { useAuth } from '@/hooks/useAuth';
+import { registerUser } from '@/lib/api';
+import { RegisterForm } from '@/components/auth/RegisterForm';
 
 export default function RegisterPage() {
   const router = useRouter();
