@@ -5,5 +5,6 @@ namespace FarmaDigitalBackend.Services.Interfaces
         int GetCurrentUserId();
         string GetCurrentUserEmail();
         string GetCurrentUserRole();
+        string GetClientIp();
     }
 }
