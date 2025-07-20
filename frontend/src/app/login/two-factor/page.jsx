@@ -6,6 +6,7 @@ import { loginUser } from '@/lib/api';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
+import { login } from '@/lib/auth';
 
 export default function TwoFactorPage() {
   const [code, setCode] = useState('');
@@ -50,8 +51,7 @@ export default function TwoFactorPage() {
       // 🔥 NUEVA LÓGICA: Verificar si hay access_token (login exitoso)
       if (res.access_token) {
         console.log('✅ Login exitoso con 2FA - Token recibido');
-        localStorage.setItem('token', res.access_token);
-        localStorage.setItem('user', JSON.stringify(res.user_info));
+        login(res.access_token, res.user_info);
         router.push('/dashboard');
       } else if (res.requires2FA === true) {
         console.log('❌ Código 2FA incorrecto o inválido');

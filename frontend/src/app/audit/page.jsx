@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { AuditTable } from '../../../components/audit/AuditTable';
+import {Header} from "@components/ui/Header";
 
 const acciones = [
   { value: '', label: 'Todas las acciones' },
@@ -58,17 +59,34 @@ export default function AuditPage() {
   }, [accionFilter, rolFilter, logs]);
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">Auditoría de Acciones</h2>
-      <AuditTable
-        logs={filteredLogs}
-        accionFilter={accionFilter}
-        rolFilter={rolFilter}
-        acciones={acciones}
-        roles={roles}
-        onAccionChange={e => setAccionFilter(e.target.value)}
-        onRolChange={e => setRolFilter(e.target.value)}
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Header 
+        title="Sistema de Auditoría" 
+        subtitle={`${filteredLogs.length} registros encontrados`}
+        showUserSwitcher={true} 
       />
+      
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center mb-6">
+            <Shield className="h-8 w-8 text-purple-600 mr-3" />
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Auditoría de Acciones</h2>
+              <p className="text-gray-600">Monitoreo y seguimiento de actividades del sistema</p>
+            </div>
+          </div>
+
+           <AuditTable
+            logs={filteredLogs}
+            accionFilter={accionFilter}
+            rolFilter={rolFilter}
+            acciones={acciones}
+            roles={roles}
+            onAccionChange={e => setAccionFilter(e.target.value)}
+            onRolChange={e => setRolFilter(e.target.value)}
+          />
+        </div>
+      </main>
     </div>
   );
 }

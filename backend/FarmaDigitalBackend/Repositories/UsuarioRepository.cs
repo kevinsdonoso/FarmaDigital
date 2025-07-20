@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FarmaDigitalBackend.Repositories
 {
-    public class UserRepository : IUserRepository
+    public class UsuarioRepository : IUsuarioRepository
     {
         private readonly FarmaDbContext _context;
 
-        public UserRepository(FarmaDbContext context)
+        public UsuarioRepository(FarmaDbContext context)
         {
             _context = context;
         }
@@ -54,6 +54,11 @@ namespace FarmaDigitalBackend.Repositories
         public async Task<bool> DniExists(string dni)
         {
             return await _context.Usuarios.AnyAsync(u => u.Dni == dni);
+        }
+
+        public async Task<Usuario?> GetUserById(int idUsuario)
+        {
+            return await _context.Usuarios.FirstOrDefaultAsync(u => u.IdUsuario == idUsuario);
         }
     }
 }

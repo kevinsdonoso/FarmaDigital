@@ -7,8 +7,8 @@ namespace FarmaDigitalBackend.Models
     public class DetalleFactura
     {
         [Key]
-        [Column("id_detalle_factura")]
-        public int IdDetalleFactura { get; set; }
+        [Column("id_detalle")]
+        public int IdDetalle { get; set; }
 
         [Required]
         [Column("id_factura")]
@@ -29,5 +29,12 @@ namespace FarmaDigitalBackend.Models
         [Required]
         [Column("subtotal", TypeName = "decimal(10,2)")]
         public decimal Subtotal { get; set; }
+
+        // Relaciones (opcional)
+        [ForeignKey("IdFactura")]
+        public virtual Factura? Factura { get; set; }
+
+        [ForeignKey("IdProducto")]
+        public virtual Producto? Producto { get; set; }
     }
 }
