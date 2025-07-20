@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
-import { useCart } from "@/components/cart/CartContext";
+import { useCart } from "@/context/CartContext";
 
 export default function LoginPage() {
   const [form, setForm] = useState({ username: '', password: '' });

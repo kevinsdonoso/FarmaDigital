@@ -1,10 +1,10 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import { Package, Plus, Search } from 'lucide-react';
-import { useAuth } from '../../../hooks/useAuth';
-import { Button } from '../../../components/ui/Button';
-import { getProductos, deleteProducto, updateProducto } from '../../../lib/api';
-import ProductTable from '../../../components/products/ProductTable';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/Button';
+import { getProductos, deleteProducto, updateProducto } from '@/lib/api';
+import ProductTable from '@/components/products/ProductTable';
 import ProductFilter from './ProductFilter';
 import Link from 'next/link';
 import Header from "@/components/ui/Header";

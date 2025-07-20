@@ -5,7 +5,7 @@ import { getProducts } from "@/lib/api";
 import ProductCard from "@/components/products/ProductCard";
 import Header from "@/components/ui/Header";
 import { Package, ShoppingCart, Clock, ArrowLeft } from 'lucide-react';
-import { useCart } from "@/components/cart/CartContext";
+import { useCart } from "@/context/CartContext";
 
 export default function DashboardPage() {
   const [productos, setProductos] = useState([]);
