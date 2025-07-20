@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { loginUser } from '@/lib/api';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button'; 
+import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { login } from '@/lib/auth';
 
@@ -129,7 +130,77 @@ export default function TwoFactorSetupPage() {
             <p>Código: {code} ({code.length}/6)</p>
             <p>QR: {qrCode ? 'Disponible' : 'No disponible'}</p>
           </div>
-        )}
+
+        {/* Layout de dos columnas */}
+        <div className="grid md:grid-cols-2 gap-8 mt-8">
+          
+          {/* Columna izquierda - Instrucciones y QR */}
+          <div className="space-y-6">
+            
+            
+            {/* QR Code */}
+            {qrCode && (
+              <div className="flex justify-center">
+                <div className="bg-white p-4 rounded-lg border-2 border-gray-300 shadow-sm">
+                  <img 
+                    src={qrCode} 
+                    alt="QR 2FA" 
+                    className="w-48 h-48" 
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Columna derecha - Formulario */}
+          <div className="space-y-6">
+            
+            {/* Título del formulario */}
+            <div className="text-center">
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Código de Verificación</h2>
+            </div>
+
+            {/* Input del código */}
+            <div className="text-center">
+              <Input
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                maxLength={6}
+                className="text-center text-2xl tracking-[0.5rem] h-16 text-gray-900"
+                style={{ letterSpacing: '0.5rem' }}
+              />
+              
+              {/* Ojo para mostrar/ocultar */}
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </div>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <Alert type="error" className="text-sm">
+                {error}
+              </Alert>
+            )}
+
+            {/* Botón Confirmar */}
+            <Button 
+              onClick={handleConfirm} 
+              disabled={loading || code.length !== 6} 
+              className={`w-full h-14 text-lg font-semibold rounded-lg transition-all duration-200 ${
+                code.length === 6 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {loading ? 'Verificando...' : 'Confirmar Código'}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FarmaDigitalBackend.Migrations
 {
     [DbContext(typeof(FarmaDbContext))]
-    [Migration("20250719090251_Inicial")]
+    [Migration("20250720155350_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />

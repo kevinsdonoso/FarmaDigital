@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/components/cart/CartContext";
+import { useCart } from "@/context/CartContext";
 import { getTarjetas, procesarCompra } from "@/lib/api";
+import { Button } from "@/components/ui/Button";
 
 export default function PagoPage() {
   const { cart, total, clearCart } = useCart();
@@ -24,7 +25,7 @@ export default function PagoPage() {
   
   useEffect(() => {
     if (!cart || cart.length === 0) {
-      router.push('/carrito');
+      router.push('/dashboard/carrito');
       return;
     }
     fetchTarjetas();
@@ -109,8 +110,22 @@ export default function PagoPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8">Método de Pago</h1>
+       <div className="max-w-4xl mx-auto p-6">
+      {/* Header con botón volver y título centrado */}
+      <div className="flex items-center justify-between mb-8">
+        <Button 
+          variant="outline"
+          onClick={() => router.push('/dashboard/carrito')} 
+          className="text-sm px-4 py-2 text-blue-600 border-blue-600 hover:bg-blue-50"
+        >
+          ← Volver al carrito
+        </Button>
+
+        <h1 className="text-3xl font-bold">Método de Pago</h1>
+
+        {/* Espacio invisible para balancear el flex */}
+        <div className="w-[200px]"></div>
+      </div>
       
       <div className="space-y-6">
         <div className="bg-white rounded-lg shadow-md p-6">
