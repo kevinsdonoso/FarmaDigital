@@ -6,15 +6,34 @@ using FarmaDigitalBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
-// Obtiene la cadena desde variables de entorno de Railway
-var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+
+// ✅ Carga la cadena de conexión desde configuración (entorno o appsettings)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+Console.WriteLine($"🌐 Entorno ASPNETCORE_ENVIRONMENT: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"🔗 Cadena de conexión cargada: {connectionString}");
+
+// ✅ Verificar conexión a PostgreSQL antes de continuar
+try
+{
+    using var testConnection = new NpgsqlConnection(connectionString);
+    await testConnection.OpenAsync();
+    Console.WriteLine("✅ Conexión a la base de datos establecida exitosamente.");
+    await testConnection.CloseAsync();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"❌ Error al conectar con la base de datos: {ex.Message}");
+    throw;
+}
 
 var key = "FarmaDigital-JWT-Secret-Key-2024-Very-Long-And-Secure-Key-For-Production";
 
-// AGREGAR CORS AQUÍ 
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -26,11 +45,13 @@ builder.Services.AddCors(options =>
     });
 });
 
+// JWT Authentication
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(x => {
+}).AddJwtBearer(x =>
+{
     x.RequireHttpsMetadata = false;
     x.SaveToken = true;
     x.TokenValidationParameters = new TokenValidationParameters
@@ -43,11 +64,10 @@ builder.Services.AddAuthentication(x =>
     };
 });
 
-// JWT Service con la key
 builder.Services.AddSingleton<IJwtService>(provider =>
     new JwtService(key));
 
-// Database
+// DB Context
 builder.Services.AddDbContext<FarmaDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -60,13 +80,10 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// ✅ Habilita Swagger SIEMPRE
+app.UseSwagger();
+app.UseSwaggerUI();
 
-// USAR CORS AQUÍ (ANTES de Authentication)
 app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
@@ -75,11 +92,11 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// ✅ APLICAR MIGRACIONES AUTOMÁTICAMENTE AL INICIAR
+// ✅ Ejecutar migraciones automáticamente
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<FarmaDbContext>();
-    dbContext.Database.Migrate(); // <-- Esto crea las tablas si no existen
+    dbContext.Database.Migrate();
 }
 
 app.Run();
