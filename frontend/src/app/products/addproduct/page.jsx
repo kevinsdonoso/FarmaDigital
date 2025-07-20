@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Package, Save, ArrowLeft, AlertCircle } from 'lucide-react';
-import { Button } from '../../../../components/ui/Button';
-import { useAuth } from '../../../../hooks/useAuth';
-import { addProducto } from '../../../../lib/api';
+import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/hooks/useAuth';
+import { addProducto } from '@/lib/api';
 
 export default function AddProduct() {
   const router = useRouter();

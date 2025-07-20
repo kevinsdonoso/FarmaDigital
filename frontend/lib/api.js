@@ -1,17 +1,8 @@
 import axios from 'axios';
-import { USE_FAKE_DATA, BASE_URL } from "./config";
-import { getCurrentToken, login } from "./auth";
-import './axiosConfig'; // Importar configuración de axios
+import { getCurrentToken, login } from "@/lib/auth";
+import '@/lib/axiosConfig'; // Importar configuración de axios
 
-export async function registerUser(userData) {
-  if (USE_FAKE_DATA) {
-    await delay(500);
-    return {
-      success: true,
-      message: 'Usuario registrado exitosamente'
-    };
-  }
-  
+export async function registerUser(userData) { 
   try {
     console.log('Enviando datos al backend:', userData); // Debug
     
@@ -50,51 +41,7 @@ export async function registerUser(userData) {
 }
 
 export async function loginUser(credentials) {
-  if (USE_FAKE_DATA) {
-    await delay(500);
-    
-    if (credentials.username === 'nuevo') {
-      const fakeSecret = 'JBSWY3DPEHPK3PXP';
-      const fakeQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=otpauth%3A%2F%2Ftotp%2FFarmaDigital%3A${encodeURIComponent(credentials.username)}%3Fsecret%3D${fakeSecret}%26issuer%3DFarmaDigital`;
-      
-      return {
-        requires2FA: true,
-        qrCode: fakeQrUrl
-      };
-    } else if (credentials.username === 'existente') {
-      return {
-        requires2FA: true
-      };
-    } else if (credentials.twoFactorCode) {
-      if (credentials.twoFactorCode === '123456') {
-        return {
-          success: true,
-          access_token: 'fake_token_123',
-          user_info: {
-            id_usuario: 1,
-            nombre: 'Usuario Fake',
-            correo: 'usuario@fake.com',
-            role: 'cliente'
-          }
-        };
-      } else {
-        throw new Error('Código 2FA inválido');
-      }
-    } else {
-      return {
-        success: true,
-        access_token: 'fake_token_123',
-        user_info: {
-          id_usuario: 1,
-          nombre: 'Usuario Fake',
-          correo: 'usuario@fake.com',
-          role: 'cliente'
-        }
-      };
-    }
-  }
-  
-  try {
+    try {
     console.log('Enviando credenciales al backend:', credentials);
     
     const requestBody = {
@@ -460,3 +407,21 @@ export async function procesarCompra(payload) {
     throw new Error(message);
   }
 }
+
+
+//logs
+export async function getLogsAuditoria() {
+  try {
+    const response = await axios.get('/api/auditoria/logs');
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener logs de auditoría:', error);
+    
+    const message = error.response?.data?.message || 
+                   error.response?.data?.error || 
+                   error.message;
+    
+    throw new Error(message);
+  }
+} 
+
