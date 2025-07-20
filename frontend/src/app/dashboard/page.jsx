@@ -1,11 +1,12 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getProducts } from "@/lib/api";
+import { getProductos } from "@/lib/api";
 import ProductCard from "@/components/products/ProductCard";
 import Header from "@/components/ui/Header";
 import { Package, ShoppingCart, Clock, ArrowLeft } from 'lucide-react';
 import { useCart } from "@/context/CartContext";
+import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 export default function DashboardPage() {
   const [productos, setProductos] = useState([]);
@@ -14,11 +15,13 @@ export default function DashboardPage() {
   const router = useRouter();
   const { cart } = useCart();
 
+  const status = useRouteGuard({ allowedRoles: [3] }); 
+
   useEffect(() => {
     const fetchProductos = async () => {
       try {
         console.log('🏠 Dashboard: Cargando productos...');
-        const data = await getProducts();
+        const data = await getProductos();
         console.log('✅ Dashboard: Productos cargados:', data?.length || 0);
         setProductos(data || []);
       } catch (err) {

@@ -7,8 +7,8 @@ const useAuth = create((set) => ({
   state: {
     user: null,
     isAuthenticated: false,
-    loading: false,
-    token: getToken(), // Solo desde cookies
+    loading: true, // <-- empieza en true
+    token:getToken() ,
   },
 
   login: (userData) => set((state) => ({

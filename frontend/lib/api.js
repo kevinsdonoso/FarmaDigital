@@ -447,6 +447,14 @@ export async function send2FATarjeta(idTarjeta) {
   }
 }
 
+export async function getUserFromToken() {
+  try {
+    const response = await axios.get('/api/Identity/user-token');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Error al obtener usuario");
+  }
+}
 // Procesar compra
 export async function procesarCompra(payload) {
   try {

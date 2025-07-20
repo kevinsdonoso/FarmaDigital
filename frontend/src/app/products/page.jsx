@@ -8,9 +8,9 @@ import ProductTable from '@/components/products/ProductTable';
 import ProductFilter from './ProductFilter';
 import Link from 'next/link';
 import Header from "@/components/ui/Header";
+import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 export default function Products() {
-  const { state: authState } = useAuth();
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,7 +19,8 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Cargar productos desde la API
+  const status = useRouteGuard({ allowedRoles: [2] }); // Solo vendedores
+
   useEffect(() => {
     loadProductos();
   }, []);
@@ -80,6 +81,10 @@ const handleEditProduct = async () => {
     setIsEditModalOpen(false);
     setEditingProduct(null);
   };
+  // AHORA SÍ, LOS RETURNS CONDICIONALES
+  if (status === "loading") return <div>Cargando...</div>;
+  if (status === "unauthorized") return null;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

@@ -21,7 +21,7 @@ namespace FarmaDigitalBackend.Services
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenType = "Bearer";
-            var expire = DateTime.UtcNow.AddHours(0.05);
+            var expire = DateTime.UtcNow.AddHours(0.35);
             var tokenKey = Encoding.ASCII.GetBytes(_key);
 
             string roleName = GetRoleName(user.IdRol);
