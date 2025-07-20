@@ -1,6 +1,6 @@
 {
   "build": {
-    "context": ".",
+    "context": "backend/FarmaDigitalBackend",
     "dockerfilePath": "backend/FarmaDigitalBackend/Dockerfile"
   },
   "deploy": {
