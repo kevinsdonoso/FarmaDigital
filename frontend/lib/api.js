@@ -184,7 +184,7 @@ export async function createFactura(facturaData) {
 
 export async function getProducts() {
   try {
-    const response = await axios.get('/api/productos?activo=true');
+    const response = await axios.get('api/Productos?activo=true&stock=true');
     return response.data;
   } catch (error) {
     console.error('Error al obtener productos:', error);
@@ -193,6 +193,119 @@ export async function getProducts() {
                    error.response?.data?.error || 
                    error.message;
     
+    throw new Error(message);
+  }
+}
+
+export async function getProductos() {
+  try {
+    const response = await axios.get('api/Productos?activo=true');
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener productos:', error);
+    
+    const message = error.response?.data?.message || 
+                   error.response?.data?.error || 
+                   error.message;
+    
+    throw new Error(message);
+  }
+}
+
+// ...existing code...
+
+// Agregar nuevo producto
+export async function addProducto(productoData) {
+  try {
+    console.log('Enviando datos del producto:', productoData);
+    
+    const requestData = {
+      nombre: productoData.nombre,
+      descripcion: productoData.descripcion,
+      precio: parseFloat(productoData.precio),
+      stock: parseInt(productoData.stock),
+      esSensible: Boolean(productoData.esSensible),
+      categoria: productoData.categoria,
+      activo: Boolean(productoData.activo ?? true) // Por defecto true
+    };
+
+    const response = await axios.post('/api/productos', requestData);
+    
+    console.log('Respuesta al agregar producto:', response);
+    
+    return {
+      success: true,
+      message: response.data.message || 'Producto agregado exitosamente',
+      data: response.data
+    };
+  } catch (error) {
+    console.error('Error al agregar producto:', error);
+    
+    if (error.code === 'ERR_NETWORK') {
+      throw new Error('Error de conexión. Verifica que el servidor esté funcionando.');
+    }
+    
+    const message = error.response?.data?.message || 
+                   error.response?.data?.error || 
+                   error.response?.data?.Message || 
+                   error.message;
+    
+    throw new Error(message);
+  }
+}
+
+// Editar producto existente
+export async function updateProducto(id, productoData) {
+  try {
+    console.log('Editando producto ID:', id, 'con datos:', productoData);
+    
+   const requestData = {
+      nombre: productoData.nombre,
+      descripcion: productoData.descripcion,
+      precio: parseFloat(productoData.precio),
+      stock: parseInt(productoData.stock),
+      esSensible: Boolean(productoData.esSensible),
+      categoria: productoData.categoria,
+      activo: Boolean(productoData.activo ?? true) // Por defecto true
+    };
+
+    // Si tu API usa PUT para actualizar
+    const response = await axios.put(`/api/productos/producto?id=${id}`, requestData);
+    
+    console.log('Respuesta al editar producto:', response);
+    
+    return {
+      success: true,
+      message: response.data.message || 'Producto actualizado exitosamente',
+      data: response.data
+    };
+  } catch (error) {
+    console.error('Error al editar producto:', error);
+    
+    if (error.code === 'ERR_NETWORK') {
+      throw new Error('Error de conexión. Verifica que el servidor esté funcionando.');
+    }
+    
+    const message = error.response?.data?.message || 
+                   error.response?.data?.error || 
+                   error.response?.data?.Message || 
+                   error.message;
+    
+    throw new Error(message);
+  }
+}
+
+// ...existing code...
+
+export async function deleteProducto(id) {
+  try {
+    const response = await axios.delete(`/api/productos/producto?id=${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al eliminar producto:', error);  
+    const message = error.response?.data?.message || 
+                   error.response?.data?.error || 
+                   error.message;
     throw new Error(message);
   }
 }

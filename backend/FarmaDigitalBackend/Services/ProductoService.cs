@@ -32,6 +32,12 @@ namespace FarmaDigitalBackend.Services
             return new OkObjectResult(productos);
         }
 
+        public async Task<IActionResult> GetActiveProductsWithStock()
+        {
+            var productos = await _productoRepository.GetActiveProductsWithStock();
+            return new OkObjectResult(productos);
+        }
+
         public async Task<IActionResult> GetProductById(int id)
         {
             var producto = await _productoRepository.GetProductById(id);

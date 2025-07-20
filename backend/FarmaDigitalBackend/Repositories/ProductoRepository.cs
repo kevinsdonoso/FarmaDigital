@@ -33,6 +33,13 @@ namespace FarmaDigitalBackend.Repositories
                 .ToListAsync(); // ✅ Solo filtrar por activos
         }
 
+        public async Task<List<Producto>> GetActiveProductsWithStock()
+        {
+            return await _context.Productos
+                .Where(p => p.Activo == true && p.Stock > 0)
+                .ToListAsync(); // ✅ Filtrar por activos y stock
+        }
+
         public async Task<Producto?> GetProductById(int id)
         {
             return await _context.Productos
