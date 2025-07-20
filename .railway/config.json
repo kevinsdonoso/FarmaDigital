@@ -1,0 +1,9 @@
+{
+  "build": {
+    "context": "backend/FarmaDigitalBackend",
+    "dockerfilePath": "backend/FarmaDigitalBackend/Dockerfile"
+  },
+  "deploy": {
+    "startCommand": null
+  }
+}
