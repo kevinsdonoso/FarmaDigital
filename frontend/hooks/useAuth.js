@@ -1,6 +1,5 @@
 'use client';
 import { create } from 'zustand';
-import { fakeUsuarios } from '../lib/fakeData';
 import { getToken } from '@/lib/auth';
 
 const useAuth = create((set) => ({
@@ -56,30 +55,7 @@ const useAuth = create((set) => ({
       }));
     }
   },
-
-  switchUser: (userId) => set((state) => {
-    const fakeUser = fakeUsuarios.find(u => u.id_usuario === userId);
-    if (fakeUser) {
-      const roleMap = {
-        1: 'cliente',
-        2: 'vendedor',
-        3: 'auditor'
-      };
-      return {
-        state: {
-          ...state.state,
-          user: {
-            id_usuario: fakeUser.id_usuario,
-            nombre: fakeUser.nombre,
-            correo: fakeUser.correo,
-            role: roleMap[fakeUser.id_rol]
-          },
-          isAuthenticated: true
-        }
-      };
-    }
-    return state;
-  })
-}));
+}
+));
 
 export { useAuth };
