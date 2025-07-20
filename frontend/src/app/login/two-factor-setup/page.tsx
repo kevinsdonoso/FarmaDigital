@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { loginUser } from '@/lib/api';
 import { PasswordInput } from '@/components/ui/PasswordInput';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button'; 
 import { Alert } from '@/components/ui/Alert';
+import { login } from '@/lib/auth';
 
 export default function TwoFactorSetupPage() {
   const [code, setCode] = useState('');
@@ -21,12 +22,12 @@ export default function TwoFactorSetupPage() {
     const usernameParam = searchParams.get('username');
     const passwordParam = searchParams.get('password');
     const qrParam = searchParams.get('qr');
-    
+
     if (!usernameParam || !passwordParam || !qrParam) {
       router.push('/login');
       return;
     }
-    
+
     setUsername(usernameParam);
     setPassword(passwordParam);
     setQrCode(qrParam);
@@ -37,40 +38,24 @@ export default function TwoFactorSetupPage() {
     setError('');
 
     try {
-      const requestData = {
+      const res = await loginUser({
         username,
         password,
         twoFactorCode: code,
-      };
-      
-      console.log('Enviando datos para verificación 2FA:', requestData);
-      
-      const res = await loginUser(requestData);
-      
-      console.log('Respuesta del servidor después de 2FA:', res);
+      });
 
-            // En la función handleConfirm, cambia esta parte:
-      
       if (res.access_token) {
-        console.log('✅ Login exitoso con 2FA - Token recibido');
-        localStorage.setItem('token', res.access_token);
-        localStorage.setItem('user', JSON.stringify(res.user_info));
+        login(res.access_token, res.user_info);
         router.push('/dashboard');
       } else if (res.requires2FA) {
-        console.log('❌ Código 2FA incorrecto o inválido');
         setError('Código 2FA inválido. Verifica que el código sea correcto y que tu aplicación esté sincronizada.');
       } else if (res.success) {
-        // Fallback
-        console.log('✅ Login exitoso con 2FA - Success flag');
-        localStorage.setItem('token', res.access_token);
-        localStorage.setItem('user', JSON.stringify(res.user_info));
+        login(res.access_token, res.user_info);
         router.push('/dashboard');
       } else {
-        console.log('❌ Error en respuesta:', res);
         setError(res.message || 'Error en la verificación 2FA');
       }
     } catch (err) {
-      console.error('Error en verificación 2FA:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error de conexión';
       setError(errorMessage);
     } finally {
@@ -100,11 +85,7 @@ export default function TwoFactorSetupPage() {
         {qrCode && (
           <div className="text-center mb-6">
             <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
-              <img 
-                src={qrCode} 
-                alt="QR 2FA" 
-                className="w-48 h-48 mx-auto" 
-              />
+              <img src={qrCode} alt="QR 2FA" className="w-48 h-48 mx-auto" />
             </div>
             <p className="text-xs text-gray-600 mt-2">Escanea con tu app de autenticación</p>
           </div>
@@ -114,36 +95,33 @@ export default function TwoFactorSetupPage() {
           <PasswordInput
             label="Código de Verificación"
             value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+            }
             placeholder="000000"
             maxLength={6}
             required
           />
 
-          {error && (
-            <Alert type="error">
-              {error}
-            </Alert>
-          )}
+          {error && <Alert type="error">{error}</Alert>}
 
-          <Button 
-            onClick={handleConfirm} 
-            disabled={loading || code.length !== 6} 
+          <Button
+            onClick={handleConfirm}
+            disabled={loading || code.length !== 6}
             className="w-full h-12 text-base font-medium"
           >
             {loading ? 'Verificando...' : 'Confirmar Código'}
           </Button>
 
-          <Button 
+          <Button
             variant="outline"
-            onClick={() => router.push('/login')} 
+            onClick={() => router.push('/login')}
             className="w-full h-10"
           >
             ← Volver al login
           </Button>
         </div>
 
-        {/* Debug info en desarrollo */}
         {process.env.NODE_ENV === 'development' && (
           <div className="mt-6 p-3 bg-gray-100 rounded text-xs">
             <p><strong>Debug:</strong></p>

@@ -66,10 +66,7 @@ namespace FarmaDigitalBackend.Services
 
             var token = _jwtService.GenerateToken(user);
             return new OkObjectResult(new {
-                access_token = token.AccessToken,
-                token_type = token.TokenType,
-                expires_in = token.ExpiresIn,
-                user_info = token.UserInfo
+                access_token = token.AccessToken
             });
         }
 
@@ -120,10 +117,7 @@ namespace FarmaDigitalBackend.Services
             // Generar token
             var token = _jwtService.GenerateToken(user);
             return new OkObjectResult(new {
-                access_token = token.AccessToken,
-                token_type = token.TokenType,
-                expires_in = token.ExpiresIn,
-                user_info = token.UserInfo
+                access_token = token.AccessToken
             });
         }
     }
