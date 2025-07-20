@@ -5,7 +5,7 @@ services:
   # 🚀 Backend .NET
   farma-backend:
     build:
-      context: ./FarmaDigitalBackend/FarmaDigitalBackend
+      context: ./FarmaDigitalBackend
       dockerfile: Dockerfile
     container_name: farma_backend
     ports:

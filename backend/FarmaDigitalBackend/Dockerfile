@@ -1,6 +1,4 @@
-﻿# See https://aka.ms/customizecontainer to learn how to customize your debug container
-
-# Base de ejecución (runtime)
+﻿# Base de ejecución (runtime)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
@@ -10,9 +8,15 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
+# Copiar el archivo .csproj y restaurar dependencias
 COPY FarmaDigitalBackend.csproj ./
-RUN dotnet restore "./FarmaDigitalBackend.csproj"
+RUN dotnet restore
+
+# Copiar todo el contenido del proyecto
 COPY . ./
+
+# Compilar el proyecto
 RUN dotnet build "FarmaDigitalBackend.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Etapa de publicación
@@ -23,4 +27,5 @@ RUN dotnet publish "FarmaDigitalBackend.csproj" -c Release -o /app/publish /p:Us
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
 ENTRYPOINT ["dotnet", "FarmaDigitalBackend.dll"]
