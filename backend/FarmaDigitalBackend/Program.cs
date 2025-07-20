@@ -9,6 +9,8 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
+// Obtiene la cadena desde variables de entorno de Railway
+var connectionString = Environment.GetEnvironmentVariable("DefaultConnection");
 
 var key = "FarmaDigital-JWT-Secret-Key-2024-Very-Long-And-Secure-Key-For-Production";
 
@@ -47,7 +49,7 @@ builder.Services.AddSingleton<IJwtService>(provider =>
 
 // Database
 builder.Services.AddDbContext<FarmaDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // Dependency Injection
 RepositoryIdentity.Inject(builder.Services);
