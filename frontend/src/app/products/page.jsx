@@ -7,6 +7,7 @@ import { getProductos, deleteProducto, updateProducto } from '../../../lib/api';
 import ProductTable from '../../../components/products/ProductTable';
 import ProductFilter from './ProductFilter';
 import Link from 'next/link';
+import Header from "@/components/ui/Header";
 
 export default function Products() {
   const { state: authState } = useAuth();
@@ -24,6 +25,7 @@ export default function Products() {
   const loadProductos = async () => {
     try {
       setLoading(true);
+
       setError(null);
       const data = await getProductos();
       setProductos(data);
@@ -90,6 +92,12 @@ export default function Products() {
   }
 
   return (
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Header 
+        title="Gestión de Productos" 
+        subtitle={`${productos.length} productos en inventario`}
+        showUserSwitcher={true} 
+      />
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
@@ -143,6 +151,7 @@ export default function Products() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

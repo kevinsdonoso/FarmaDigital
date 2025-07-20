@@ -93,7 +93,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
-            label="DNI o Usuario"
+            label="DNI"
             name="username"
             type="text"
             value={form.username}

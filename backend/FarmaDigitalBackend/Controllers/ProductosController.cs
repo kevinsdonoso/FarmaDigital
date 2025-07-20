@@ -18,12 +18,22 @@ namespace FarmaDigitalBackend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProducts([FromQuery] bool? stock, [FromQuery] bool? activo)
         {
+            // Si ambos parámetros están presentes y son true
+            if (stock.HasValue && stock.Value && activo.HasValue && activo.Value)
+            {
+                // Crear un nuevo método en el service para ambos filtros
+                return await _productoService.GetActiveProductsWithStock();
+            }
+            
+            // Solo stock
             if (stock.HasValue && stock.Value)
                 return await _productoService.GetProductsWithStock();
                 
+            // Solo activo
             if (activo.HasValue && activo.Value)
                 return await _productoService.GetActiveProducts();
-
+        
+            // Sin filtros
             return await _productoService.GetAllProducts(); 
         }
 

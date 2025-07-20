@@ -184,7 +184,7 @@ export async function createFactura(facturaData) {
 
 export async function getProducts() {
   try {
-    const response = await axios.get('/api/productos?activo=true');
+    const response = await axios.get('api/Productos?activo=true&stock=true');
     return response.data;
   } catch (error) {
     console.error('Error al obtener productos:', error);
