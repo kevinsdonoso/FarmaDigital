@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/components/cart/CartContext";
+import { useCart } from "@/context/CartContext";
 import { getTarjetas, procesarCompra } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 

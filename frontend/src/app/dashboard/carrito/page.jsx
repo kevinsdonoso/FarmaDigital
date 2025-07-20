@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/components/cart/CartContext";
+import { useCart } from "@/context/CartContext";
 import { ArrowLeft, ShoppingCart, Trash2, Plus, Minus, Package } from "lucide-react";
 
 export default function CarritoPage() {

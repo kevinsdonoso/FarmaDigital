@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { getPurchaseHistory, getFacturaById } from '@/lib/api';
 import FacturaModal from '@/components/historial/FacturaModal';
 import { Clock, Package, ShoppingCart, ArrowLeft, ShoppingBag } from "lucide-react";
-import { useCart } from "@/components/cart/CartContext";
+import { useCart } from "@/context/CartContext";
 
 export default function HistorialPage() {
   const router = useRouter();
