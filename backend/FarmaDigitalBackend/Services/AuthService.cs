@@ -188,10 +188,7 @@ public async Task<IActionResult> RegisterUser(UserRegistration registration)
             // Generar token
             var token = _jwtService.GenerateToken(user);
             return new OkObjectResult(new {
-                access_token = token.AccessToken,
-                token_type = token.TokenType,
-                expires_in = token.ExpiresIn,
-                user_info = token.UserInfo
+                access_token = token.AccessToken
             });
         }
     }

@@ -1,59 +1,27 @@
-import CookiesKeys, { cookieStorage } from "./cookies";
+import CookiesKeys, { cookieStorage } from "@/lib/cookies";
 
-// Obtener token desde localStorage
+
 export const getToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem(CookiesKeys.TokenKey);
-  }
-  return null;
-};
-
-// Guardar token en localStorage
-export const setToken = (token) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(CookiesKeys.TokenKey, token);
-  }
-};
-
-// Eliminar token de localStorage
-export const removeToken = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(CookiesKeys.TokenKey);
-  }
-};
-
-// Obtener token desde cookies
-export const getTokenCookie = () => {
   return cookieStorage.getItem(CookiesKeys.TokenKey);
 };
 
-// Guardar token en cookies
-export const setTokenCookie = (token) => {
+export const setToken = (token) => {
   cookieStorage.setItem(CookiesKeys.TokenKey, token);
 };
 
-// Eliminar token de cookies
-export const removeTokenCookie = () => {
+export const removeToken = () => {
   cookieStorage.removeItem(CookiesKeys.TokenKey);
 };
 
-// Función principal para hacer login (guarda en ambos lugares)
 export const login = (token, userInfo = null) => {
   setToken(token);
-  setTokenCookie(token);
-  
-  if (userInfo) {
-    setUserInfo(userInfo);
-  }
+  // No guardar en localStorage
+  if (userInfo) setUserInfo(userInfo);
 };
 
-// Función principal para hacer logout (elimina de ambos lugares)
 export const logout = () => {
   removeToken();
-  removeTokenCookie();
   removeUserInfo();
-  
-  // Recargar la página para limpiar el estado
   if (typeof window !== 'undefined') {
     window.location.reload();
   }
@@ -95,16 +63,16 @@ export const removeUserInfo = () => {
 
 // Verificar si el usuario está autenticado
 export const isAuthenticated = () => {
-  const tokenLocal = getToken();
-  const tokenCookie = getTokenCookie();
+  const tokenCookie = getToken();
   
-  return !!(tokenLocal || tokenCookie);
+  return !!(tokenCookie);
 };
 
 // Obtener el token más reciente (prioriza localStorage sobre cookies)
 export const getCurrentToken = () => {
-  const tokenLocal = getToken();
-  const tokenCookie = getTokenCookie();
-  
-  return tokenLocal || tokenCookie;
+  const tokenCookie = getToken();
+  return tokenCookie;
 };
+
+
+

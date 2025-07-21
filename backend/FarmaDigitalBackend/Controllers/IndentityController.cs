@@ -20,5 +20,14 @@ namespace FarmaDigitalBackend.Controllers
         {
             return await _userService.GetUserByDni(dni);  
         }
+
+        [HttpGet("user-token")]
+        public async Task<ActionResult<Usuario>> GetUserFromToken()
+        {
+            var user = await _userService.GetUserFromToken(User);
+            if (user == null)
+                return Unauthorized();
+            return Ok(user);
+        }
     }
 }

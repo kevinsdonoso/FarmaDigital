@@ -183,7 +183,7 @@ export default function HistorialPage() {
                           </span>
                           {(compra.numeroFactura || compra.id || compra.idCompra) && (
                             <button
-                              onClick={() => handleVerDetalle(compra.numeroFactura || compra.id || compra.idCompra)}
+                              onClick={() => handleVerDetalle(compra.idFactura|| compra.id || compra.idCompra)}
                               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                             >
                               Ver detalle
