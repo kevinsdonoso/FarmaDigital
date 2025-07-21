@@ -13,13 +13,16 @@ namespace FarmaDigitalBackend.Services
         private readonly IUserContextService _userContextService;
         private readonly ITwoFactorRepository _twoFactorRepository;
         private readonly ITwoFactorService _twoFactorService;
+        private readonly ILogAuditoriaService _logService;
 
-        public TarjetaService(ITarjetaRepository tarjetaRepository, IUserContextService userContextService, ITwoFactorRepository twoFactorRepository, ITwoFactorService twoFactorService)
+        public TarjetaService(ITarjetaRepository tarjetaRepository, IUserContextService userContextService, ITwoFactorRepository twoFactorRepository, ITwoFactorService twoFactorService, ILogAuditoriaService logService)
         {
             _tarjetaRepository = tarjetaRepository;
             _userContextService = userContextService;
             _twoFactorRepository = twoFactorRepository;
             _twoFactorService = twoFactorService;
+            _logService = logService;
+            
         }
 
         public async Task<IActionResult> GetTarjetasUsuarioAsync()
@@ -55,62 +58,72 @@ namespace FarmaDigitalBackend.Services
             }
         }
 
-        public async Task<IActionResult> GuardarTarjetaAsync(TarjetaDto tarjetaDto)
+public async Task<IActionResult> GuardarTarjetaAsync(TarjetaDto tarjetaDto)
+{
+    try
+    {
+        var userId = _userContextService.GetCurrentUserId();
+        var ipCliente = _userContextService.GetClientIp(); // ✅ Captura de IP
+
+        var twoFactor = await _twoFactorRepository.GetByUserIdAsync(userId);
+        if (twoFactor == null || string.IsNullOrEmpty(twoFactor.SecretKey))
+            return new BadRequestObjectResult(new { success = false, message = "No se encontró configuración de doble factor" });
+
+        var twoFactorResult = await _twoFactorService.ValidateCode(twoFactor.SecretKey, tarjetaDto.Codigo2FA);
+        if (!twoFactorResult)
+            return new BadRequestObjectResult(new { success = false, message = "Código de doble factor inválido" });
+
+        // Validar tarjeta
+        var validacionResult = ValidarTarjeta(tarjetaDto);
+        if (validacionResult != null)
+            return validacionResult;
+
+        var tarjeta = new Tarjeta
         {
-            try
-            {
-                var userId = _userContextService.GetCurrentUserId();
-                var twoFactor = await _twoFactorRepository.GetByUserIdAsync(userId);
-                if (twoFactor == null || string.IsNullOrEmpty(twoFactor.SecretKey))
-                    return new BadRequestObjectResult(new { success = false, message = "No se encontró configuración de doble factor" });
+            IdUsuario = userId,
+            UltimosDigitos = tarjetaDto.NumeroTarjeta.Substring(tarjetaDto.NumeroTarjeta.Length - 4),
+            NumeroEncriptado = EncryptionService.Encrypt(tarjetaDto.NumeroTarjeta),
+            TipoTarjeta = DetectarTipoTarjeta(tarjetaDto.NumeroTarjeta),
+            FechaExpiracion = tarjetaDto.FechaExpiracion,
+            NombreTitular = tarjetaDto.NombreTitular.Trim().ToUpper(),
+            EsPrincipal = tarjetaDto.EsPrincipal
+        };
 
-                var twoFactorResult = await _twoFactorService.ValidateCode(twoFactor.SecretKey, tarjetaDto.Codigo2FA);
-                if (!twoFactorResult)
-                    return new BadRequestObjectResult(new { success = false, message = "Código de doble factor inválido" });
+        var tarjetaGuardada = await _tarjetaRepository.CreateTarjetaAsync(tarjeta);
+        Console.WriteLine($"[AUDITORÍA] userId: {userId}, ipCliente: {ipCliente}");
+        // Registrar auditoría
+        await _logService.RegistrarAsync(
+            userId,
+            "guardar_tarjeta",
+            $"Tarjeta terminada en {tarjetaGuardada.UltimosDigitos} guardada correctamente.",
+            ipCliente
+        );
 
-                // Validar tarjeta
-                var validacionResult = ValidarTarjeta(tarjetaDto);
-                if (validacionResult != null)
-                    return validacionResult;
+        var responseDto = new TarjetaResponseDto
+        {
+            IdTarjeta = tarjetaGuardada.IdTarjeta,
+            UltimosDigitos = tarjetaGuardada.UltimosDigitos,
+            TipoTarjeta = tarjetaGuardada.TipoTarjeta,
+            FechaExpiracion = tarjetaGuardada.FechaExpiracion,
+            NombreTitular = tarjetaGuardada.NombreTitular,
+            EsPrincipal = tarjetaGuardada.EsPrincipal,
+            Activa = tarjetaGuardada.Activa
+        };
 
-                var tarjeta = new Tarjeta
-                {
-                    IdUsuario = userId,
-                    UltimosDigitos = tarjetaDto.NumeroTarjeta.Substring(12),
-                    NumeroEncriptado = EncryptionService.Encrypt(tarjetaDto.NumeroTarjeta),
-                    TipoTarjeta = DetectarTipoTarjeta(tarjetaDto.NumeroTarjeta),
-                    FechaExpiracion = tarjetaDto.FechaExpiracion,
-                    NombreTitular = tarjetaDto.NombreTitular.Trim().ToUpper(),
-                    EsPrincipal = tarjetaDto.EsPrincipal
-                };
-
-                var tarjetaGuardada = await _tarjetaRepository.CreateTarjetaAsync(tarjeta);
-
-                var responseDto = new TarjetaResponseDto
-                {
-                    IdTarjeta = tarjetaGuardada.IdTarjeta,
-                    UltimosDigitos = tarjetaGuardada.UltimosDigitos,
-                    TipoTarjeta = tarjetaGuardada.TipoTarjeta,
-                    FechaExpiracion = tarjetaGuardada.FechaExpiracion,
-                    NombreTitular = tarjetaGuardada.NombreTitular,
-                    EsPrincipal = tarjetaGuardada.EsPrincipal,
-                    Activa = tarjetaGuardada.Activa
-                };
-
-                return new OkObjectResult(new { success = true, data = responseDto, message = "Tarjeta guardada exitosamente" });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return new UnauthorizedObjectResult(new { success = false, message = ex.Message });
-            }
-            catch (Exception)
-            {
-                return new ObjectResult(new { success = false, message = "Error interno del servidor" })
-                {
-                    StatusCode = 500
-                };
-            }
-        }
+        return new OkObjectResult(new { success = true, data = responseDto, message = "Tarjeta guardada exitosamente" });
+    }
+    catch (UnauthorizedAccessException ex)
+    {
+        return new UnauthorizedObjectResult(new { success = false, message = ex.Message });
+    }
+    catch (Exception)
+    {
+        return new ObjectResult(new { success = false, message = "Error interno del servidor" })
+        {
+            StatusCode = 500
+        };
+    }
+}
 
         public async Task<IActionResult> EliminarTarjetaAsync(int idTarjeta)
         {
