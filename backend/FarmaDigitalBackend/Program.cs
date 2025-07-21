@@ -6,29 +6,56 @@ using FarmaDigitalBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
 var key = "FarmaDigital-JWT-Secret-Key-2024-Very-Long-And-Secure-Key-For-Production";
 
-// AGREGAR CORS AQUÍ 
+// ✅ Cargar y mostrar cadena de conexión
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine($"🌍 Entorno: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"🔗 Cadena de conexión: {connectionString}");
+
+// ✅ Verificar conexión a la base de datos
+try
+{
+    using var testConnection = new NpgsqlConnection(connectionString);
+    await testConnection.OpenAsync();
+    Console.WriteLine("✅ Conexión a la base de datos exitosa.");
+    await testConnection.CloseAsync();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"❌ Error al conectar con la base de datos: {ex.Message}");
+    throw;
+}
+
+// ✅ CORS (incluye Vercel)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "https://localhost:3000", "https://localhost:3001", "https://farma-digital-git-main-kevin-donosos-projects.vercel.app")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        policy.WithOrigins(
+            "http://localhost:3000", "http://localhost:3001",
+            "https://localhost:3000", "https://localhost:3001",
+            "https://farma-digital-git-main-kevin-donosos-projects.vercel.app"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
 
+// ✅ JWT
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(x => {
+})
+.AddJwtBearer(x =>
+{
     x.RequireHttpsMetadata = false;
     x.SaveToken = true;
     x.TokenValidationParameters = new TokenValidationParameters
@@ -41,22 +68,18 @@ builder.Services.AddAuthentication(x =>
     };
 });
 
-// JWT Service con la key
-builder.Services.AddSingleton<IJwtService>(provider =>
-    new JwtService(key));
+builder.Services.AddSingleton<IJwtService>(provider => new JwtService(key));
 
-
-// Database
+// ✅ Base de datos
 builder.Services.AddDbContext<FarmaDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
-// Dependency Injection
+// ✅ Inyección de dependencias
 RepositoryIdentity.Inject(builder.Services);
 
-// Configurar controladores con autorización global
+// ✅ Controladores protegidos por defecto
 builder.Services.AddControllers(options =>
 {
-    // Requiere autorización por defecto en todos los endpoints
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AuthorizeFilter());
 });
 
@@ -65,20 +88,25 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// ✅ Swagger solo en desarrollo
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// USAR CORS AQUÍ (IMPORTANTE: ANTES DE UseAuthentication)
+// ✅ Middleware
 app.UseCors("AllowFrontend");
-
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
+
+// ✅ Aplicar migraciones automáticas al iniciar
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<FarmaDbContext>();
+    dbContext.Database.Migrate();
+}
 
 app.Run();
