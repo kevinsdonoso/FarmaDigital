@@ -4,9 +4,6 @@ import { Shield } from 'lucide-react';
 import { AuditTable } from '@/components/audit/AuditTable';
 import Header from "@/components/ui/Header";
 import { getLogsAuditoria } from '@/lib/api';
-import { useRouteGuard } from "@/hooks/useRouteGuard";
-
-
 
 const acciones = [
   { value: '', label: 'Todas las acciones' },
@@ -40,15 +37,12 @@ async function fetchLogs() {
   }
 }
 
-
 export default function AuditPage() {
   const [logs, setLogs] = useState([]);
   const [accionFilter, setAccionFilter] = useState('');
   const [rolFilter, setRolFilter] = useState('');
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const status = useRouteGuard({ allowedRoles: [1] });
 
   useEffect(() => {
     const loadLogs = async () => {
@@ -63,8 +57,9 @@ export default function AuditPage() {
         setLoading(false);
       }
     };
+    
     loadLogs();
-  }, []);
+    }, []);
 
   useEffect(() => {
     let result = logs || [];
@@ -80,10 +75,6 @@ export default function AuditPage() {
     }
     setFilteredLogs(result);
   }, [accionFilter, rolFilter, logs]);
-
-
-  if (status === "loading") return <div>Cargando...</div>;
-  if (status === "unauthorized") return null;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

@@ -9,12 +9,16 @@ using Microsoft.IdentityModel.Tokens;
 using FarmaDigitalBackend.Repositories;
 using FarmaDigitalBackend.Repositories.Interfaces;
 
+/// Configuración principal de la aplicación FarmaDigitalBackend.
+/// Incluye CORS, JWT, DI, DB, Swagger y controladores.
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
+// Clave secreta para JWT
+
 var key = "FarmaDigital-JWT-Secret-Key-2024-Very-Long-And-Secure-Key-For-Production";
 
-// AGREGAR CORS AQUÍ 
+/// Configuración de CORS para permitir solicitudes desde el frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -24,7 +28,7 @@ builder.Services.AddCors(options =>
             "http://localhost:3001",
             "https://localhost:3000",
             "https://localhost:3001",
-            "https://farma-digital.vercel.app" 
+            "https://farma-digital.vercel.app" // Frontend en producción
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
@@ -32,6 +36,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+/// Configuración de autenticación JWT.
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -49,25 +54,25 @@ builder.Services.AddAuthentication(x =>
     };
 });
 
-// JWT Service con la key
+/// Servicio JWT singleton con la clave secreta.
 builder.Services.AddSingleton<IJwtService>(provider =>
     new JwtService(key));
 
 
-// Database
+/// Configuración de la base de datos PostgreSQL.
 builder.Services.AddDbContext<FarmaDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddHttpContextAccessor();
 
-// REGISTRAR REPOSITORIO Y SERVICIO DE AUDITORÍA
+/// Registro de repositorios y servicios de auditoría.
 builder.Services.AddScoped<ILogsAuditoriaRepository, LogsAuditoriaRepository>();
 builder.Services.AddScoped<ILogAuditoriaService, LogAuditoriaService>();
 
-// Dependency Injection
+/// Inyección de dependencias personalizada.
 RepositoryIdentity.Inject(builder.Services);
 
-// Configurar controladores con autorización global
+/// Configuración global de controladores con autorización por defecto.
 builder.Services.AddControllers(options =>
 {
     // Requiere autorización por defecto en todos los endpoints
@@ -79,13 +84,14 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+/// Configuración de Swagger solo en entorno de desarrollo.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// USAR CORS AQUÍ (IMPORTANTE: ANTES DE UseAuthentication)
+/// Uso de CORS antes de autenticación.
 app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
@@ -93,6 +99,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+/// Mapeo de controladores.
 app.MapControllers();
 
 app.Run();

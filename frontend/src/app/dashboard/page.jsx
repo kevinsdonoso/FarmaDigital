@@ -17,7 +17,6 @@ export default function DashboardPage() {
 
   const status = useRouteGuard({ allowedRoles: [3] }); 
 
-
   useEffect(() => {
     const fetchProductos = async () => {
       try {
@@ -49,8 +48,6 @@ export default function DashboardPage() {
         <div className="flex-1 flex items-center justify-center bg-gray-50">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
-  if (status === "loading") return <div>Cargando...</div>;
-  if (status === "unauthorized") return null;
             <p className="mt-4 text-gray-600">Cargando catálogo...</p>
           </div>
         </div>
