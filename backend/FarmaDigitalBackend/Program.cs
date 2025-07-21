@@ -95,6 +95,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseSwagger();
+app.UseSwaggerUI();
+
 // ✅ Middleware
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
