@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
+using FarmaDigitalBackend.Repositories;
+using FarmaDigitalBackend.Repositories.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -73,6 +75,12 @@ builder.Services.AddSingleton<IJwtService>(provider => new JwtService(key));
 // ✅ Base de datos
 builder.Services.AddDbContext<FarmaDbContext>(options =>
     options.UseNpgsql(connectionString));
+
+builder.Services.AddHttpContextAccessor();
+
+// REGISTRAR REPOSITORIO Y SERVICIO DE AUDITORÍA
+builder.Services.AddScoped<ILogsAuditoriaRepository, LogsAuditoriaRepository>();
+builder.Services.AddScoped<ILogAuditoriaService, LogAuditoriaService>();
 
 // ✅ Inyección de dependencias
 RepositoryIdentity.Inject(builder.Services);
