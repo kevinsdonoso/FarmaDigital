@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getCurrentToken, login } from "@/lib/auth";
+import { login } from "@/lib/auth";
 import '@/lib/axiosConfig'; // Importar configuración de axios
 
 export async function registerUser(userData) { 
@@ -107,9 +107,6 @@ export async function loginUser(credentials) {
   }
 }
 
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 export async function createFactura(facturaData) {
   try {
     const response = await axios.post('/api/facturas', facturaData);

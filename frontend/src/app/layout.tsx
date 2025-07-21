@@ -1,6 +1,5 @@
 import './globals.css';
 import { ReactNode } from 'react';
-import Header from '@/components/ui/Header';
 import Footer from '@/components/ui/Footer';
 import { AuthProvider } from '@/context/AuthProvider';
 import { CartProvider } from '@/context/CartContext';
@@ -18,7 +17,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-screen flex flex-col bg-white antialiased">
         <AuthProvider>
           <CartProvider>
-            <Header />
             <main className="flex-1 container mx-auto p-4">{children}</main>
             <Footer />
           </CartProvider>
