@@ -99,6 +99,7 @@ public async Task<IActionResult> RegisterUser(UserRegistration registration)
 
 
             var token = _jwtService.GenerateToken(user);
+
             var ip = _userContextService.GetClientIp(); // asegúrate de tener acceso al contexto
 
             await _logService.RegistrarAsync(
