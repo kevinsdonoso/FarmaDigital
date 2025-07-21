@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import {useState } from "react";
+import { useRouter } from "next/navigation";
 import { loginUser } from '@/lib/api';
+import { useAuth } from '@/context/AuthProvider';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button';
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const { login: contextLogin } = useAuth();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -57,10 +59,17 @@ export default function LoginPage() {
         return;
       }
 
-      // Login directo (no debería pasar)
-      if (res.success) {
-        localStorage.setItem('token', res.access_token);
-        localStorage.setItem('user', JSON.stringify(res.user_info));
+      // Login exitoso
+      if (res.success && res.access_token) {
+        console.log('✅ Login exitoso directo');
+        
+        // Usar nuestro sistema de autenticación integrado
+        // El token ya se guardó en loginUser() con la función login()
+        
+        // Actualizar el contexto de Auth
+        contextLogin(res.user_info);
+        
+        // Redirigir al dashboard
         router.push('/dashboard');
       }
 
@@ -81,7 +90,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
-            label="DNI o Usuario"
+            label="DNI"
             name="username"
             type="text"
             value={form.username}

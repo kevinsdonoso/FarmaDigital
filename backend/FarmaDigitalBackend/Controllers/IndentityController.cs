@@ -8,17 +8,26 @@ namespace FarmaDigitalBackend.Controllers
     [ApiController]
     public class IdentityController : ControllerBase
     {
-        private readonly IUserService _userService;
+        private readonly IUsuarioService _userService;
 
-        public IdentityController(IUserService userService)
+        public IdentityController(IUsuarioService userService)
         {
             _userService = userService;
         }
 
         [HttpGet("user")]
-        public async Task<Usuario?> GetUserByDni([FromQuery] string dni)  // ← Cambié "Dni" por "dni"
+        public async Task<Usuario?> GetUserByDni([FromQuery] string dni)  
         {
-            return await _userService.GetUserByDni(dni);  // ← Ahora coincide
+            return await _userService.GetUserByDni(dni);  
+        }
+
+        [HttpGet("user-token")]
+        public async Task<ActionResult<Usuario>> GetUserFromToken()
+        {
+            var user = await _userService.GetUserFromToken(User);
+            if (user == null)
+                return Unauthorized();
+            return Ok(user);
         }
     }
 }

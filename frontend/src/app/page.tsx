@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
+import { getToken } from '@/lib/auth';
 
 export default function HomePage() {
   const router = useRouter();
@@ -10,7 +11,7 @@ export default function HomePage() {
 
   useEffect(() => {
     // Verificar si hay un token almacenado
-    const token = localStorage.getItem('token');
+    const token = getToken();
     
     if (token && state.isAuthenticated) {
       // Si hay token y está autenticado, ir al dashboard

@@ -9,12 +9,12 @@ namespace FarmaDigitalBackend.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IUsuarioRepository _userRepository;
         private readonly ITwoFactorRepository _twoFactorRepository;
         private readonly IJwtService _jwtService;
         private readonly ITwoFactorService _twoFactorService;
 
-        public AuthService(IUserRepository userRepository, ITwoFactorRepository twoFactorRepository, 
+        public AuthService(IUsuarioRepository userRepository, ITwoFactorRepository twoFactorRepository, 
                           IJwtService jwtService, ITwoFactorService twoFactorService)
         {
             _userRepository = userRepository;
@@ -58,7 +58,7 @@ namespace FarmaDigitalBackend.Services
             if (string.IsNullOrEmpty(credentials.TwoFactorCode))
                 return new BadRequestObjectResult(new { requires2FA = true });
 
-            var twoFactor = await _twoFactorRepository.GetByUserId(user.IdUsuario);
+            var twoFactor = await _twoFactorRepository.GetByUserIdAsync(user.IdUsuario);
             var isValid = await _twoFactorService.ValidateCode(twoFactor.SecretKey, credentials.TwoFactorCode);
             
             if (!isValid)
@@ -66,10 +66,7 @@ namespace FarmaDigitalBackend.Services
 
             var token = _jwtService.GenerateToken(user);
             return new OkObjectResult(new {
-                access_token = token.AccessToken,
-                token_type = token.TokenType,
-                expires_in = token.ExpiresIn,
-                user_info = token.UserInfo
+                access_token = token.AccessToken
             });
         }
 
@@ -81,7 +78,7 @@ namespace FarmaDigitalBackend.Services
                 var secretKey = await _twoFactorService.GenerateSecretKey();
                 var qrCode = await _twoFactorService.GenerateQrCode(user.Correo, secretKey);
 
-                var existingTwoFactor = await _twoFactorRepository.GetByUserId(user.IdUsuario);
+                var existingTwoFactor = await _twoFactorRepository.GetByUserIdAsync(user.IdUsuario);
                 if (existingTwoFactor != null)
                 {
                     existingTwoFactor.SecretKey = secretKey;
@@ -104,7 +101,7 @@ namespace FarmaDigitalBackend.Services
             }
 
             // Si envió código, activar 2FA y hacer login
-            var twoFactor = await _twoFactorRepository.GetByUserId(user.IdUsuario);
+            var twoFactor = await _twoFactorRepository.GetByUserIdAsync(user.IdUsuario);
             var isValid = await _twoFactorService.ValidateCode(twoFactor.SecretKey, credentials.TwoFactorCode);
             
             if (!isValid)
@@ -120,10 +117,7 @@ namespace FarmaDigitalBackend.Services
             // Generar token
             var token = _jwtService.GenerateToken(user);
             return new OkObjectResult(new {
-                access_token = token.AccessToken,
-                token_type = token.TokenType,
-                expires_in = token.ExpiresIn,
-                user_info = token.UserInfo
+                access_token = token.AccessToken
             });
         }
     }

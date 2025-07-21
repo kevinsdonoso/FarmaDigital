@@ -4,7 +4,8 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "BACKEND_PORT": "5245"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5245"
@@ -13,7 +14,9 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "BACKEND_PORT": "5245",
+        "BACKEND_HTTPS_PORT": "7053"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:7053;http://localhost:5245"
@@ -30,8 +33,8 @@
       "launchBrowser": true,
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
       "environmentVariables": {
-        "ASPNETCORE_HTTPS_PORTS": "8081",
-        "ASPNETCORE_HTTP_PORTS": "8080"
+       "ASPNETCORE_HTTP_PORTS": "5245",
+       "ASPNETCORE_HTTPS_PORTS": "7053"
       },
       "publishAllPorts": true,
       "useSSL": true

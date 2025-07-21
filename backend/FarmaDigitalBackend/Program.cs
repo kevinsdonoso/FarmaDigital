@@ -45,6 +45,7 @@ builder.Services.AddAuthentication(x =>
 builder.Services.AddSingleton<IJwtService>(provider =>
     new JwtService(key));
 
+
 // Database
 builder.Services.AddDbContext<FarmaDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -52,7 +53,13 @@ builder.Services.AddDbContext<FarmaDbContext>(options =>
 // Dependency Injection
 RepositoryIdentity.Inject(builder.Services);
 
-builder.Services.AddControllers();
+// Configurar controladores con autorización global
+builder.Services.AddControllers(options =>
+{
+    // Requiere autorización por defecto en todos los endpoints
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AuthorizeFilter());
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

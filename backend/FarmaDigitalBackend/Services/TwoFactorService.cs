@@ -51,6 +51,13 @@ namespace FarmaDigitalBackend.Services
             }
         }
 
+        public async Task<bool> VerifyCodeAsync(int userId, string code)
+        {
+            // Lógica para verificar el código 2FA (por ejemplo, comparar con el último código enviado)
+            // Devuelve true si es válido, false si no
+            return await Task.FromResult(false);
+        }
+
         private string GenerateTotp(byte[] key, long timeStep)
         {
             var timeBytes = BitConverter.GetBytes(timeStep);
