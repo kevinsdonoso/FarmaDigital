@@ -6,6 +6,8 @@ import { loginUser } from '@/lib/api';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
+import { login } from '@/lib/auth';
+import { getUserFromToken } from '@/lib/api';
 
 export default function TwoFactorPage() {
   const [code, setCode] = useState('');
@@ -50,9 +52,20 @@ export default function TwoFactorPage() {
       // 🔥 NUEVA LÓGICA: Verificar si hay access_token (login exitoso)
       if (res.access_token) {
         console.log('✅ Login exitoso con 2FA - Token recibido');
-        localStorage.setItem('token', res.access_token);
-        localStorage.setItem('user', JSON.stringify(res.user_info));
-        router.push('/dashboard');
+        login(res.access_token, res.user_info);
+
+        // NUEVO: Llama a la API para obtener el usuario y redirige según el rol
+        const userData = await getUserFromToken();
+        if (userData.idRol === 2) {
+          router.push('/products'); // vendedor
+        } else if (userData.idRol === 1) {
+          router.push('/audit'); // auditor
+        } else if (userData.idRol === 3) {
+          router.push('/dashboard'); // cliente
+        } else {
+          router.push('/'); // fallback
+        }
+        return;
       } else if (res.requires2FA === true) {
         console.log('❌ Código 2FA incorrecto o inválido');
         setError('Código 2FA inválido. Verifica que el código sea correcto y que tu aplicación esté sincronizada.');
@@ -62,9 +75,20 @@ export default function TwoFactorPage() {
       } else if (res.success === true) {
         // Fallback por si acaso viene con success
         console.log('✅ Login exitoso con 2FA - Success flag');
-        localStorage.setItem('token', res.access_token);
-        localStorage.setItem('user', JSON.stringify(res.user_info));
-        router.push('/dashboard');
+        login(res.access_token, res.user_info);
+
+        // NUEVO: Llama a la API para obtener el usuario y redirige según el rol
+        const userData = await getUserFromToken();
+        if (userData.idRol === 2) {
+          router.push('/products');
+        } else if (userData.idRol === 1) {
+          router.push('/audit');
+        } else if (userData.idRol === 3) {
+          router.push('/dashboard');
+        } else {
+          router.push('/');
+        }
+        return;
       } else {
         console.log('❌ Error desconocido - respuesta completa:', res);
         setError('Código inválido');

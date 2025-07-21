@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
-import { useCart } from "@/components/cart/CartContext";
+import { useCart } from "@/context/CartContext";
 
 export default function LoginPage() {
   const [form, setForm] = useState({ username: '', password: '' });
@@ -93,7 +93,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
-            label="DNI o Usuario"
+            label="DNI"
             name="username"
             type="text"
             value={form.username}

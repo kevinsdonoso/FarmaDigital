@@ -5,7 +5,7 @@ namespace FarmaDigitalBackend.Services
 {
     public static class EncryptionService
     {
-        private static readonly string EncryptionKey = "FarmaDigital2024SuperSecretKey!!"; // 32 caracteres; // 32 caracteres exactos
+        private static readonly string EncryptionKey = "FarmaDigital2024SuperSecretKey!!";
 
         public static string Encrypt(string plainText)
         {

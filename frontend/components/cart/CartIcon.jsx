@@ -1,4 +1,4 @@
-import { useCart } from "./CartContext";
+import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
 
 export default function CartIcon() {

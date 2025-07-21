@@ -1,6 +1,5 @@
 'use client'
 import { create } from 'zustand';
-import { fakeItemsCarrito, fakeProductos } from '../lib/fakeData';
 
 const useCart = create((set) => ({
   state: {

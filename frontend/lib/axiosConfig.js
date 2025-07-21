@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { getCurrentToken, logout } from './auth';
-import { BASE_URL } from './config';
+import { getCurrentToken, logout } from '@/lib/auth';
+import { BASE_URL } from '@/lib/config';
 
 // Configurar la instancia base de Axios
 const configureApiService = () => {

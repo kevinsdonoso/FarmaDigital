@@ -5,11 +5,11 @@ services:
   # 🚀 Backend .NET
   farma-backend:
     build:
-      context: ./FarmaDigitalBackend/FarmaDigitalBackend
+      context: ./FarmaDigitalBackend
       dockerfile: Dockerfile
     container_name: farma_backend
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"  # ✅ Variable global
     depends_on:
       - postgres
     environment:
@@ -28,7 +28,7 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"  
 
   # 🧠 pgAdmin
   pgadmin:
@@ -39,7 +39,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
-      - "5050:80"
+      - "${PGADMIN_PORT}:80" 
     depends_on:
       - postgres
 

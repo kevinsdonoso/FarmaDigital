@@ -21,11 +21,11 @@ namespace FarmaDigitalBackend.Services
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenType = "Bearer";
-            var expire = DateTime.UtcNow.AddHours(10);
+            var expire = DateTime.UtcNow.AddHours(0.35);
             var tokenKey = Encoding.ASCII.GetBytes(_key);
 
             string roleName = GetRoleName(user.IdRol);
-            var permissions = PermissionService.GetPermissionsByRole(roleName);
+            var modules = PermissionService.GetModulesByRole(roleName);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -36,14 +36,14 @@ namespace FarmaDigitalBackend.Services
                     { "email", user.Correo },
                     { "fullname", user.Nombre },
                     { "role", roleName },
-                    { "permissions", string.Join(";", permissions.Select(p => $"{p.Module}:{p.Action}:{p.Resource}")) }
+                    { "modules", string.Join(";", modules) }
                 },
                 Subject = new ClaimsIdentity(new[]
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.IdUsuario.ToString()),
                     new Claim(ClaimTypes.Name, user.Nombre),
                     new Claim(ClaimTypes.Email, user.Correo),
-                    new Claim("role", roleName) 
+                    new Claim("role", roleName)
                 }),
                 Expires = expire,
                 SigningCredentials = new SigningCredentials(
@@ -60,7 +60,7 @@ namespace FarmaDigitalBackend.Services
                 Nombre = user.Nombre,
                 Correo = user.Correo,
                 Rol = roleName,
-                Permissions = permissions.Select(p => $"{p.Module}:{p.Action}:{p.Resource}").ToList()
+                Permissions = modules
             };
 
             return new TokenResponse(tokenString, expire, tokenType, userInfo);
@@ -70,10 +70,10 @@ namespace FarmaDigitalBackend.Services
         {
             return idRol switch
             {
-                1 => "Administrador",
-                2 => "Farmaceutico",
-                3 => "Cliente",
-                _ => "Cliente" 
+                1 => "administrador",
+                2 => "vendedor",
+                3 => "cliente",
+                _ => "cliente"
             };
         }
 
