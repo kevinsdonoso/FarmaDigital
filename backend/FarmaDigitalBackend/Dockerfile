@@ -7,7 +7,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE ${BACKEND_PORT}
 EXPOSE ${BACKEND_HTTPS_PORT}
-EXPOSE 8080# 👉 Exponemos también el puerto que usa Railway
+# 👉 Exponemos también el puerto que usa Railway
+EXPOSE 8080
 
 # Etapa de compilación
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
