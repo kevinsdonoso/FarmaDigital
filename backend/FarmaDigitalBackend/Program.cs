@@ -24,7 +24,7 @@ builder.Services.AddCors(options =>
             "http://localhost:3001",
             "https://localhost:3000",
             "https://localhost:3001",
-            "https://farma-digital.vercel.app" // <-- Agrega esta línea
+            "https://farma-digital.vercel.app" 
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
