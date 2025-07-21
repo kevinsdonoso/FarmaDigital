@@ -27,9 +27,12 @@ builder.Services.AddCors(options =>
             "http://localhost:3000",
             "http://localhost:3001",
             "https://localhost:3000",
-            "https://localhost:3001",
+            "https://localhost:3001", 
+"https://farma-digital-git-main-kevin-donosos-projects.vercel.app",
             "https://farma-digital.vercel.app" // Frontend en producción
         )
+
+
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
