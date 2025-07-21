@@ -1,8 +1,8 @@
 import React from 'react';
-import { Input } from '@components/ui/Input';
-import { PasswordInput } from '@components/ui/PasswordInput';
-import { Button } from '@components/ui/Button';
-import { Alert } from '@components/ui/Alert';
+import { Input } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
+import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
 
 export const RegisterForm = ({
   formData,
