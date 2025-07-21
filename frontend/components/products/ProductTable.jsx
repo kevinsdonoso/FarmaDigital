@@ -1,8 +1,9 @@
 'use client'
 import React, { useState } from 'react';
 import { Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Modal } from '../ui/Modal';
+import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { updateProducto } from '@/lib/api';
 
 export default function ProductTable({ productos, onDeleteProduct, onEditProduct }) {
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, producto: null });
@@ -18,17 +19,42 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
 
   const confirmDelete = () => {
     if (deleteModal.producto) {
-      onDeleteProduct(deleteModal.producto.id_producto);
+      // ✅ CAMBIAR A idProducto
+      onDeleteProduct(deleteModal.producto.idProducto);
       setDeleteModal({ isOpen: false, producto: null });
-      // El modal se cierra automáticamente y ya no necesitamos alert
     }
   };
 
-  const handleEditSave = (formData) => {
-    if (editModal.producto && onEditProduct) {
-      // Llamar a la función de editar del componente padre
-      onEditProduct(editModal.producto.id_producto, formData);
-      setEditModal({ isOpen: false, producto: null });
+  const handleEditSave = async (formData) => {
+    if (editModal.producto) {
+      try {
+        // ✅ CAMBIAR A idProducto
+        const productId = editModal.producto.idProducto;
+        
+        console.log('🔄 Editando producto ID:', productId, 'con datos:', formData);
+        
+        const apiData = {
+          nombre: formData.nombre,
+          descripcion: formData.descripcion,
+          precio: parseFloat(formData.precio),
+          stock: parseInt(formData.stock),
+          esSensible: formData.esSensible, // Ya coincide con la API
+          categoria: formData.categoria,
+          activo: true
+        };
+
+        await updateProducto(productId, apiData);
+        
+        console.log('✅ Producto actualizado exitosamente');
+        
+        setEditModal({ isOpen: false, producto: null });
+        if (onEditProduct) {
+          onEditProduct();
+        }
+      } catch (error) {
+        console.error('❌ Error al actualizar producto:', error);
+        alert('Error al actualizar producto: ' + error.message);
+      }
     }
   };
 
@@ -60,7 +86,8 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {productos.map((producto) => (
-              <tr key={producto.id_producto} className="hover:bg-gray-50">
+              // ✅ CAMBIAR KEY A idProducto
+              <tr key={producto.idProducto} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <Package className="h-8 w-8 text-gray-400 mr-3" />
@@ -70,6 +97,10 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
                       </div>
                       <div className="text-sm text-gray-500">
                         {producto.descripcion}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {/* ✅ CAMBIAR A idProducto */}
+                        ID: {producto.idProducto}
                       </div>
                     </div>
                   </div>
@@ -92,11 +123,12 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    producto.es_sensible 
+                    // ✅ CAMBIAR A esSensible (ya coincide)
+                    producto.esSensible 
                       ? 'bg-yellow-100 text-yellow-800' 
                       : 'bg-green-100 text-green-800'
                   }`}>
-                    {producto.es_sensible ? 'Sensible' : 'Normal'}
+                    {producto.esSensible ? 'Sensible' : 'Normal'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -160,8 +192,10 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
               <span className="font-semibold">{deleteModal.producto?.nombre}</span>{' '}
               será eliminado permanentemente del sistema.
             </p>
-              <div className="bg-gray-600 rounded-md p-3">
+            <div className="bg-gray-100 rounded-md p-3">
               <div className="text-sm">
+                {/* ✅ CAMBIAR A idProducto */}
+                <p><strong>ID:</strong> {deleteModal.producto?.idProducto}</p>
                 <p><strong>Categoría:</strong> {deleteModal.producto?.categoria}</p>
                 <p><strong>Stock actual:</strong> {deleteModal.producto?.stock} unidades</p>
               </div>
@@ -194,12 +228,20 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
     precio: producto?.precio || '',
     stock: producto?.stock || '',
     categoria: producto?.categoria || '',
-    es_sensible: producto?.es_sensible || false
+    esSensible: producto?.esSensible || false // ✅ CAMBIAR A esSensible
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData);
+    setLoading(true);
+    try {
+      await onSave(formData);
+    } catch (error) {
+      console.error('Error en formulario:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -212,6 +254,12 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Mostrar ID del producto para debug */}
+      <div className="bg-gray-100 p-2 rounded text-sm text-gray-600">
+        {/* ✅ CAMBIAR A idProducto */}
+        Editando producto ID: {producto?.idProducto}
+      </div>
+
       <div>
         <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-1">
           Nombre del producto
@@ -222,6 +270,7 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
           name="nombre"
           value={formData.nombre}
           onChange={handleChange}
+          disabled={loading}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
           required
         />
@@ -236,6 +285,7 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
           name="descripcion"
           value={formData.descripcion}
           onChange={handleChange}
+          disabled={loading}
           rows={3}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
           required
@@ -253,6 +303,7 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
             name="precio"
             value={formData.precio}
             onChange={handleChange}
+            disabled={loading}
             step="0.01"
             min="0"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -270,6 +321,7 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
             name="stock"
             value={formData.stock}
             onChange={handleChange}
+            disabled={loading}
             min="0"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
             required
@@ -286,29 +338,32 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
           name="categoria"
           value={formData.categoria}
           onChange={handleChange}
+          disabled={loading}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
           required
         >
           <option value="">Selecciona una categoría</option>
-          <option value="Medicamentos">Medicamentos</option>
+          <option value="Analgésico">Analgésico</option>
+          <option value="Antiinflamatorio">Antiinflamatorio</option>
+          <option value="Ansiolítico">Ansiolítico</option>
+          <option value="Antibiótico">Antibiótico</option>
           <option value="Vitaminas">Vitaminas</option>
-          <option value="Antibióticos">Antibióticos</option>
-          <option value="Analgésicos">Analgésicos</option>
           <option value="Cuidado Personal">Cuidado Personal</option>
           <option value="Primeros Auxilios">Primeros Auxilios</option>
         </select>
       </div>
 
-      <div className="flex items-center">
+       <div className="flex items-center">
         <input
           type="checkbox"
-          id="es_sensible"
-          name="es_sensible"
-          checked={formData.es_sensible}
+          id="esSensible"
+          name="esSensible" // ✅ Cambiar comentario a formato de línea
+          checked={formData.esSensible}
           onChange={handleChange}
+          disabled={loading}
           className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
         />
-        <label htmlFor="es_sensible" className="ml-2 block text-sm text-gray-700">
+        <label htmlFor="esSensible" className="ml-2 block text-sm text-gray-700">
           Producto sensible
         </label>
       </div>
@@ -318,11 +373,23 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
           type="button"
           variant="outline"
           onClick={onCancel}
+          disabled={loading}
         >
           Cancelar
         </Button>
-        <Button type="submit">
-          Guardar Cambios
+        <Button 
+          type="submit"
+          disabled={loading}
+          className="flex items-center"
+        >
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Guardando...
+            </>
+          ) : (
+            'Guardar Cambios'
+          )}
         </Button>
       </div>
     </form>

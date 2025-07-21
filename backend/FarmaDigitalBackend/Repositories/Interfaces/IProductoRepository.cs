@@ -6,7 +6,8 @@ namespace FarmaDigitalBackend.Repositories.Interfaces
     {
         Task<List<Producto>> GetAllProducts();
         Task<List<Producto>> GetProductsWithStock();
-        Task<List<Producto>> GetActiveProducts(); 
+        Task<List<Producto>> GetActiveProducts();
+        Task<List<Producto>> GetActiveProductsWithStock();
         Task<Producto?> GetProductById(int id);
         Task<Producto> CreateProduct(Producto producto);
         Task<Producto?> UpdateProduct(int id, Producto producto);

@@ -6,6 +6,8 @@ using FarmaDigitalBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using FarmaDigitalBackend.Repositories;
+using FarmaDigitalBackend.Repositories.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -17,7 +19,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "https://localhost:3000", "https://localhost:3001")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "https://localhost:3000", "https://localhost:3001", "https://farma-digital-git-main-kevin-donosos-projects.vercel.app")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -45,14 +47,27 @@ builder.Services.AddAuthentication(x =>
 builder.Services.AddSingleton<IJwtService>(provider =>
     new JwtService(key));
 
+
 // Database
 builder.Services.AddDbContext<FarmaDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddHttpContextAccessor();
+
+// REGISTRAR REPOSITORIO Y SERVICIO DE AUDITORÍA
+builder.Services.AddScoped<ILogsAuditoriaRepository, LogsAuditoriaRepository>();
+builder.Services.AddScoped<ILogAuditoriaService, LogAuditoriaService>();
+
 // Dependency Injection
 RepositoryIdentity.Inject(builder.Services);
 
-builder.Services.AddControllers();
+// Configurar controladores con autorización global
+builder.Services.AddControllers(options =>
+{
+    // Requiere autorización por defecto en todos los endpoints
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AuthorizeFilter());
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
