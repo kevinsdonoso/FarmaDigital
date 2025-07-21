@@ -2,7 +2,7 @@
 'use client'
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { getToken } from '@/lib/auth';
 
 export default function HomePage() {
@@ -28,7 +28,7 @@ export default function HomePage() {
       <div className="text-center">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">FarmaDigital</h1>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-2 text-gray-600">Cargando...</p>
+        <p className="mt-2 text-gray-600">pagina page Cargando...</p>
       </div>
     </div>
   );
