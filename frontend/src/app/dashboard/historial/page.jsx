@@ -6,6 +6,9 @@ import FacturaModal from '@/components/historial/FacturaModal';
 import { Clock, Package, ShoppingCart, ArrowLeft, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 
+// ✨ AGREGAR IMPORTS DE SEGURIDAD
+import { sanitizeInput, checkRateLimit } from '@/lib/security';
+
 export default function HistorialPage() {
   const router = useRouter();
   const { cart } = useCart();
@@ -14,7 +17,25 @@ export default function HistorialPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const cartItemsCount = cart.reduce((sum, item) => sum + item.cantidad, 0);
+  // ✨ SANITIZAR CONTADOR DE CARRITO
+  const cartItemsCount = Math.max(0, cart.reduce((sum, item) => {
+    const cantidad = Number(item.cantidad) || 0;
+    return sum + cantidad;
+  }, 0));
+
+   // ✨ FUNCIÓN PARA SANITIZAR DATOS DE COMPRAS
+  const sanitizeComprasData = (comprasData) => {
+    if (!Array.isArray(comprasData)) return [];
+    
+    return comprasData.map(compra => ({
+      ...compra,
+      numeroFactura: sanitizeInput(compra.numeroFactura || compra.id || compra.idCompra || ''),
+      fecha: sanitizeInput(compra.fecha || compra.fechaCompra || compra.created_at || ''),
+      estado: sanitizeInput(compra.estado || compra.estadoCompra || 'Sin estado'),
+      total: Number(compra.total || compra.montoTotal || 0),
+      productos: Number(compra.productos || compra.cantidadProductos || 0)
+    }));
+  };
 
   useEffect(() => {
     const fetchHistorial = async () => {
@@ -28,15 +49,17 @@ export default function HistorialPage() {
         console.log('✅ Respuesta del historial:', response);
         
         if (response.success) {
-          setCompras(response.data || []);
-          console.log(`📦 ${response.data?.length || 0} compras cargadas`);
+          // ✨ SANITIZAR DATOS DE COMPRAS
+          const sanitizedCompras = sanitizeComprasData(response.data || []);
+          setCompras(sanitizedCompras);
+          console.log(`📦 ${sanitizedCompras.length} compras cargadas`);
         } else {
           setError('No se pudo cargar el historial de compras');
           setCompras([]);
         }
       } catch (err) {
         console.error('❌ Error al cargar historial:', err);
-        setError(err.message || 'Error al cargar el historial de compras');
+        setError(sanitizeInput(err.message || 'Error al cargar el historial de compras'));
         setCompras([]);
       } finally {
         setLoading(false);
@@ -46,10 +69,24 @@ export default function HistorialPage() {
     fetchHistorial();
   }, []);
 
+  // ✨ FUNCIÓN SEGURA PARA VER DETALLE
   const handleVerDetalle = async (idFactura) => {
+    // Rate limiting para prevenir spam
+    if (!checkRateLimit(`view_detail_${idFactura}`, 5, 30000)) {
+      console.warn('Rate limit excedido para ver detalles');
+      return;
+    }
+
+    // Sanitizar ID de factura
+    const sanitizedId = sanitizeInput(idFactura);
+    if (!sanitizedId) {
+      setError('ID de factura no válido');
+      return;
+    }
+
     try {
-      console.log('🔍 Cargando detalle de factura:', idFactura);
-      const facturaDetalle = await getFacturaById(idFactura);
+      console.log('🔍 Cargando detalle de factura:', sanitizedId);
+      const facturaDetalle = await getFacturaById(sanitizedId);
       
       if (facturaDetalle.success) {
         setFacturaSeleccionada(facturaDetalle.data);
@@ -58,7 +95,7 @@ export default function HistorialPage() {
       }
     } catch (error) {
       console.error('❌ Error al cargar factura:', error);
-      setError('Error al cargar el detalle de la factura');
+      setError(sanitizeInput(error.message || 'Error al cargar el detalle de la factura'));
     }
   };
 
@@ -111,7 +148,8 @@ export default function HistorialPage() {
                 Carrito
                 {cartItemsCount > 0 && (
                   <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                    {cartItemsCount}
+                    {/* ✨ CONTADOR SANITIZADO */}
+                    {cartItemsCount > 99 ? '99+' : cartItemsCount}
                   </span>
                 )}
               </button>
@@ -123,6 +161,7 @@ export default function HistorialPage() {
         <div className="bg-white rounded-lg shadow-sm p-6">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              {/* ✨ ERROR SANITIZADO */}
               <p className="text-red-600">{error}</p>
               <button 
                 onClick={() => window.location.reload()} 
@@ -151,49 +190,57 @@ export default function HistorialPage() {
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Mis Compras Recientes</h2>
               <div className="divide-y divide-gray-200">
-                {compras.map((compra) => (
-                  <div key={compra.id || compra.idCompra || compra.numeroFactura} className="py-6 first:pt-0 hover:bg-gray-50 rounded-lg px-4 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <ShoppingBag className="h-10 w-10 text-blue-600" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-lg font-medium text-gray-900">
-                            Pedido #{compra.numeroFactura || compra.id || compra.idCompra}
+               {compras.map((compra) => {
+                  // ✨ DATOS YA SANITIZADOS
+                  const compraId = compra.numeroFactura || `compra-${Date.now()}`;
+                  
+                  return (
+                    <div key={compraId} className="py-6 first:pt-0 hover:bg-gray-50 rounded-lg px-4 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0">
+                            <ShoppingBag className="h-10 w-10 text-blue-600" />
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {compra.fecha || compra.fechaCompra || compra.created_at} • {compra.productos || compra.cantidadProductos || 'N/A'} productos
+                          
+                          <div className="ml-4">
+                            <div className="text-lg font-medium text-gray-900">
+                              Pedido #{compra.numeroFactura}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {compra.fecha}
+                            </div>
+                            <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                              compra.estado === 'Entregado' || compra.estado === 'completado'
+                                ? 'bg-green-100 text-green-800'
+                                : compra.estado === 'En tránsito' || compra.estado === 'pendiente'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {compra.estado}
+                            </span>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xl font-medium text-gray-900">
-                          ${(compra.total || compra.montoTotal || 0).toFixed(2)}
-                        </div>
-                        <div className="flex items-center space-x-3 mt-2">
-                          <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                            (compra.estado || compra.estadoCompra) === 'Entregado' || (compra.estado || compra.estadoCompra) === 'completado'
-                              ? 'bg-green-100 text-green-800'
-                              : (compra.estado || compra.estadoCompra) === 'En tránsito' || (compra.estado || compra.estadoCompra) === 'pendiente'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {compra.estado || compra.estadoCompra || 'Sin estado'}
-                          </span>
-                          {(compra.numeroFactura || compra.id || compra.idCompra) && (
-                            <button
-                              onClick={() => handleVerDetalle(compra.numeroFactura || compra.id || compra.idCompra)}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                              Ver detalle
-                            </button>
-                          )}
+                        <div className="text-right">
+                          <div className="text-xl font-medium text-gray-900">
+                            {/* ✨ TOTAL SANITIZADO */}
+                             ${compra.total.toFixed(2)}
+                          </div>
+                          <div className="flex items-center space-x-3 mt-2">
+                            
+                            {(compra.numeroFactura || compra.id || compra.idCompra) && (
+                              <button
+                                onClick={() => handleVerDetalle(compra.idFactura|| compra.id || compra.idCompra)}
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                Ver detalle
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                  })}
               </div>
             </div>
           )}

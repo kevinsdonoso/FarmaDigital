@@ -7,6 +7,7 @@ import Header from "@/components/ui/Header";
 import { Package, ShoppingCart, Clock, ArrowLeft } from 'lucide-react';
 import { useCart } from "@/context/CartContext";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
+import { sanitizeInput } from '@/lib/security';
 
 export default function DashboardPage() {
   const [productos, setProductos] = useState([]);
@@ -17,16 +18,36 @@ export default function DashboardPage() {
 
   const status = useRouteGuard({ allowedRoles: [3] }); 
 
+  const sanitizeProductData = (productos) => {
+    if (!Array.isArray(productos)) return [];
+    
+    return productos.map(producto => ({
+      ...producto,
+      nombre: sanitizeInput(producto.nombre || ''),
+      descripcion: sanitizeInput(producto.descripcion || ''),
+      categoria: sanitizeInput(producto.categoria || ''),
+      // Mantener números como números (precio, stock, etc.)
+      precio: Number(producto.precio) || 0,
+      stock: Number(producto.stock) || 0,
+      idProducto: producto.idProducto || producto.id || producto.id_producto
+    }));
+  };
+
   useEffect(() => {
     const fetchProductos = async () => {
       try {
         console.log('🏠 Dashboard: Cargando productos...');
         const data = await getProductos();
-        console.log('✅ Dashboard: Productos cargados:', data?.length || 0);
-        setProductos(data || []);
+        
+        // ✨ SANITIZAR DATOS RECIBIDOS
+        const sanitizedData = sanitizeProductData(data);
+        
+        console.log('✅ Dashboard: Productos cargados:', sanitizedData?.length || 0);
+        setProductos(sanitizedData);
+
       } catch (err) {
         console.error("❌ Dashboard: Error al cargar productos:", err);
-        setError(err.message);
+        setError(sanitizeInput(err.message || 'Error desconocido'));
       } finally {
         setLoading(false);
       }
@@ -35,7 +56,10 @@ export default function DashboardPage() {
     fetchProductos();
   }, []);
 
-  const cartItemsCount = cart.reduce((sum, item) => sum + item.cantidad, 0);
+  const cartItemsCount = Math.max(0, cart.reduce((sum, item) => {
+    const cantidad = Number(item.cantidad) || 0;
+    return sum + cantidad;
+  }, 0));
 
   if (loading) {
     return (
@@ -67,6 +91,7 @@ export default function DashboardPage() {
           <div className="text-center max-w-md mx-auto">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
               <h2 className="text-lg font-semibold text-red-800 mb-2">Error al cargar productos</h2>
+              {/* ✨ ERROR SANITIZADO */}
               <p className="text-red-600 mb-4">{error}</p>
               <button 
                 onClick={() => window.location.reload()} 
@@ -107,7 +132,8 @@ export default function DashboardPage() {
                 Carrito
                 {cartItemsCount > 0 && (
                   <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                    {cartItemsCount}
+                    {/* ✨ CONTADOR SANITIZADO */}
+                    {cartItemsCount > 99 ? '99+' : cartItemsCount}
                   </span>
                 )}
               </button>
