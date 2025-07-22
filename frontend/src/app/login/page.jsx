@@ -4,18 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginUser } from '@/lib/api';
 import { useAuth } from '@/context/AuthProvider';
-import { Input } from '@/components/ui/Input';
-import { PasswordInput } from '@/components/ui/PasswordInput';
-import { Button } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Alert';
-// ✨ SOLO IMPORTAR LO NECESARIO PARA LOGS ANÓNIMOS
-import { logAnonymousAction, anonymousActions } from '@/lib/audit';
-import { checkRateLimit } from '@/lib/security';
+import { LoginForm } from '@/components/auth/LoginForm';
 
-// ✨ Seguridad
+// ✨ IMPORTS DE SEGURIDAD
 import { useSecureForm } from '@/hooks/useSecureForm';
-import { logUserAction, auditableActions } from '@/lib/audit';
-import { checkRateLimit } from '@/lib/security';
+import { checkRateLimit, sanitizeInput } from '@/lib/security';
 
 export default function LoginPage() { 
   const [loading, setLoading] = useState(false);
@@ -23,23 +16,24 @@ export default function LoginPage() {
   const router = useRouter();
   const { login: contextLogin } = useAuth();
 
-  // ✨ Reglas de validación
+  // Reglas de validación 
   const validationRules = {
-    username: {
-      type: 'dni',
-      message: 'DNI debe tener entre 8 y 10 dígitos'
-    },
-    password: {
-      type: 'password',
-      message: 'La contraseña debe tener al menos 8 caracteres'
-    },
-    formType: 'login'
-  };
+  username: {
+    regex: /^\d{10}$/, // exactamente 10 dígitos
+    message: 'El DNI debe tener exactamente 10 dígitos.'
+  },
+  password: {
+    regex: /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/,
+    message: 'La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, números y símbolos.'
+  }
+};
 
   // ✨ Hook seguro
   const {
     formData,
     errors,
+    isBlocked,
+    blockTime,
     handleChange,
     handleSubmit: secureSubmit
   } = useSecureForm({ username: '', password: '' }, validationRules);
@@ -47,7 +41,11 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✨ Protección contra fuerza bruta
+     // Primero validamos localmente
+    const isValid = await secureSubmit(async () => {}, true); // true = solo validar sin ejecutar
+    if (!isValid) return;
+
+    // Ahora sí: checkRateLimit
     if (!checkRateLimit('login_attempt', 5, 300000)) {
       setError('Demasiados intentos. Intenta en 5 minutos.');
       return;
@@ -59,28 +57,31 @@ export default function LoginPage() {
 
       try {
         const res = await loginUser(secureData);
+        console.log('Respuesta login:', res); // <-- Mira el mensaje aquí
 
         if (res.error) {
-          // ✨ Registro de intento fallido
-          await logAnonymousAction(anonymousActions.FAILED_LOGIN, {
-            username: secureData.username,
-            reason: res.error
-          });
-          setError(res.error);
+          setError(sanitizeInput(res.error));
           return;
         }
 
-        // ✨ Autenticación con 2FA
+        // ✨ AUTENTICACIÓN CON 2FA - PASAR DATOS SEGUROS
         if (res.requires2FA === true) {
-          sessionStorage.setItem('pendingLogin', JSON.stringify({
-            username: secureData.username,
-            password: secureData.password,
-            qr: res.qrCode || null
-          }));
-
+          const now = Date.now();
+          const tempHash = btoa(secureData.username + secureData.password + now).slice(-16);
+        
+          const secureLoginData = {
+            username: sanitizeInput(secureData.username),
+            password: sanitizeInput(secureData.password),
+            tempHash: tempHash,
+            qr: res.qrCode || null,
+            timestamp: now // Usa el mismo timestamp
+          };
+        
+          sessionStorage.setItem('pendingLogin', JSON.stringify(secureLoginData));
           router.push(res.qrCode ? '/login/two-factor-setup' : '/login/two-factor');
           return;
         }
+        // ...existing code...
 
         // ✅ Login exitoso
         if (res.success && res.access_token) {
@@ -89,12 +90,7 @@ export default function LoginPage() {
         }
 
       } catch (err) {
-        // ✨ Registro de error inesperado
-        await logAnonymousAction(anonymousActions.FAILED_LOGIN, {
-          username: secureData.username,
-          error: err.message
-        });
-        setError(err.message || 'Error de conexión');
+        setError(sanitizeInput(err.message || 'Error de conexión'));  
       } finally {
         setLoading(false);
       }
@@ -109,42 +105,20 @@ export default function LoginPage() {
           <p className="text-gray-600">Ingresa tus credenciales para acceder</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
-            label="DNI"
-            name="username"
-            type="text"
-            value={formData.username}
-            onChange={handleChange}
-            placeholder="Ingresa tu DNI o usuario"
-            required
-          />
-          {errors.username && <Alert type="error">{errors.username}</Alert>}
-
-          <PasswordInput
-            label="Contraseña"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Ingresa tu contraseña"
-            required
-          />
-          {errors.password && <Alert type="error">{errors.password}</Alert>}
-
-          {(error || errors.submit) && (
-            <Alert type="error">
-              {error || errors.submit}
-            </Alert>
-          )}
-
-          <Button 
-            type="submit" 
-            loading={loading} 
-            className="w-full h-12 text-base font-medium"
-          >
-            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-          </Button>
-        </form>
+        {/* ✨ USAR COMPONENTE LOGINFORM */}
+        <LoginForm
+          formData={formData}
+          errors={{ ...errors, submit: error }}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          loading={loading || isBlocked}
+          disabled={loading || isBlocked}
+        />
+        {isBlocked && (
+          <div className="text-red-600 text-sm text-center mt-2">
+            Demasiados intentos. Espera {Math.ceil(blockTime / 1000)} segundos para volver a intentar.
+          </div>
+        )}
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">

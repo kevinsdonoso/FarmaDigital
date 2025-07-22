@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { registerUser } from '@/lib/api';
 import { RegisterForm } from '@/components/auth/RegisterForm';
-// Seguridad añadida
+// ✨ AGREGAR SANITIZEIMPUT
 import { useSecureForm } from '@/hooks/useSecureForm';
-import { checkRateLimit } from '@/lib/security';
+import { checkRateLimit, sanitizeInput } from '@/lib/security';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -15,14 +15,18 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validationRules = {
-    dni: { type: 'dni', message: 'DNI debe tener 8-10 dígitos' },
-    nombre: { type: 'name', message: 'Nombre debe tener 2-50 caracteres, solo letras' },
+    dni: { type: 'number', message: 'DNI debe tener 10 dígitos' },
+    // ✨ CORREGIR TIPO DE VALIDACIÓN
+    nombre: { type: 'text', message: 'Nombre debe tener 2-50 caracteres, solo letras' },
     correo: { type: 'email', message: 'Correo electrónico no válido' },
     password: {
       type: 'password',
       message: 'Contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y símbolos'
     },
-    formType: 'register'
+    confirmPassword: {
+      type: 'password',
+      message: 'Las contraseñas no coinciden'
+    }
   };
 
   const {
@@ -45,6 +49,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // ✨ VALIDACIÓN MEJORADA DE CONTRASEÑAS
     if (formData.password !== formData.confirmPassword) {
       setErrors(prev => ({
         ...prev,
@@ -53,6 +58,7 @@ export default function RegisterPage() {
       return;
     }
 
+    // ✨ Rate limiting para registro
     if (!checkRateLimit('register_attempt', 3, 600000)) {
       setErrors(prev => ({
         ...prev,
@@ -72,6 +78,8 @@ export default function RegisterPage() {
           correo: secureData.correo,
           password: secureData.password
         });
+        // Justo antes de validar en el submit
+        console.log('Datos del formulario:', formData);
 
         if (result.success) {
           setErrors({ success: '¡Registro exitoso! Redirigiendo al login...' });
@@ -80,10 +88,12 @@ export default function RegisterPage() {
             router.push('/login');
           }, 2000);
         } else {
-          setErrors({ submit: result.message || 'Error en el registro' });
+          // ✨ SANITIZAR MENSAJES DE ERROR
+          setErrors({ submit: sanitizeInput(result.message || 'Error en el registro') });
         }
       } catch (error) {
-        setErrors({ submit: error.message || 'Error de conexión. Intenta nuevamente.' });
+        // ✨ SANITIZAR ERRORES DE CATCH
+        setErrors({ submit: sanitizeInput(error.message || 'Error de conexión. Intenta nuevamente.') });
       } finally {
         setIsSubmitting(false);
         setLoading(false);
