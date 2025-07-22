@@ -42,7 +42,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
             "http://localhost:3000", "http://localhost:3001",
             "https://localhost:3000", "https://localhost:3001",
-            "https://farma-digital-git-main-kevin-donosos-projects.vercel.app"
+            "https://farma-digital.vercel.app/login/"
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
