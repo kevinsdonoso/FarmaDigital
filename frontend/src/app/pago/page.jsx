@@ -5,6 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { getTarjetas, procesarCompra } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { sanitizeInput, validateUserInput } from "@/lib/security";
+import LogoutButton from '@/components/ui/LogoutButton';
 
 export default function PagoPage() {
   const { cart, total, clearCart } = useCart();
@@ -201,6 +202,9 @@ export default function PagoPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      <div className="flex justify-end mb-4">
+        <LogoutButton />
+      </div> 
       <div className="flex items-center justify-between mb-8">
         <Button 
           variant="outline"

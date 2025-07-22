@@ -5,6 +5,7 @@ import { getPurchaseHistory, getFacturaById } from '@/lib/api';
 import FacturaModal from '@/components/historial/FacturaModal';
 import { Clock, Package, ShoppingCart, ArrowLeft, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import LogoutButton from '@/components/ui/LogoutButton';
 
 // ✨ AGREGAR IMPORTS DE SEGURIDAD
 import { sanitizeInput, checkRateLimit } from '@/lib/security';
@@ -116,6 +117,9 @@ export default function HistorialPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="flex justify-end mb-4">
+        <LogoutButton />
+      </div>  
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Header con navegación - MISMO ESTILO QUE DASHBOARD */}

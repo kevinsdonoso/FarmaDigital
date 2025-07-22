@@ -6,6 +6,7 @@ import { ArrowLeft, ShoppingCart, Trash2, Plus, Minus, Package } from "lucide-re
 
 // ✨ AGREGAR IMPORTS DE SEGURIDAD
 import { sanitizeInput, checkRateLimit } from '@/lib/security';
+import LogoutButton from '@/components/ui/LogoutButton';
 
 
 export default function CarritoPage() {
@@ -56,6 +57,9 @@ export default function CarritoPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="flex justify-end mb-4">
+        <LogoutButton />
+      </div> 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Header con navegación - MISMO ESTILO QUE DASHBOARD */}
