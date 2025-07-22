@@ -14,6 +14,18 @@ namespace FarmaDigitalBackend.Models
         public int? IdUsuario { get; set; }
 
         [MaxLength(100)]
+        [Column("nombre")]
+        public string Nombre { get; set; } = string.Empty;
+
+        [MaxLength(100)]
+        [Column("correo")]
+        public string Correo { get; set; } = string.Empty;
+
+        [MaxLength(50)]
+        [Column("rol")]
+        public string Rol { get; set; } = string.Empty;
+
+        [MaxLength(100)]
         [Column("accion")]
         public string Accion { get; set; } = string.Empty;
 
@@ -21,10 +33,10 @@ namespace FarmaDigitalBackend.Models
         public string Descripcion { get; set; } = string.Empty;
 
         [MaxLength(50)]
-        [Column("direccion_ip")]
-        public string DireccionIp { get; set; } = string.Empty;
+        [Column("ip")]
+        public string IP { get; set; } = string.Empty;
 
-        [Column("creado_en")]
-        public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
+        [Column("fecha")]
+        public DateTime Fecha { get; set; } = DateTime.UtcNow;
     }
 }

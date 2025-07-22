@@ -7,22 +7,23 @@ using System.Text.RegularExpressions;
 
 namespace FarmaDigitalBackend.Services
 {
-    public class TarjetaService : ITarjetaService
+public class TarjetaService : ITarjetaService
     {
         private readonly ITarjetaRepository _tarjetaRepository;
         private readonly IUserContextService _userContextService;
         private readonly ITwoFactorRepository _twoFactorRepository;
         private readonly ITwoFactorService _twoFactorService;
         private readonly ILogAuditoriaService _logService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public TarjetaService(ITarjetaRepository tarjetaRepository, IUserContextService userContextService, ITwoFactorRepository twoFactorRepository, ITwoFactorService twoFactorService, ILogAuditoriaService logService)
+        public TarjetaService(ITarjetaRepository tarjetaRepository, IUserContextService userContextService, ITwoFactorRepository twoFactorRepository, ITwoFactorService twoFactorService, ILogAuditoriaService logService, IHttpContextAccessor httpContextAccessor)
         {
             _tarjetaRepository = tarjetaRepository;
             _userContextService = userContextService;
             _twoFactorRepository = twoFactorRepository;
             _twoFactorService = twoFactorService;
             _logService = logService;
-            
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IActionResult> GetTarjetasUsuarioAsync()
@@ -90,14 +91,12 @@ public async Task<IActionResult> GuardarTarjetaAsync(TarjetaDto tarjetaDto)
         };
 
         var tarjetaGuardada = await _tarjetaRepository.CreateTarjetaAsync(tarjeta);
-        Console.WriteLine($"[AUDITORÍA] userId: {userId}, ipCliente: {ipCliente}");
-        // Registrar auditoría
-        await _logService.RegistrarAsync(
-            userId,
-            "guardar_tarjeta",
-            $"Tarjeta terminada en {tarjetaGuardada.UltimosDigitos} guardada correctamente.",
-            ipCliente
-        );
+
+        if (_httpContextAccessor.HttpContext != null)
+        {
+            _httpContextAccessor.HttpContext.Items["AuditAccion"] = "guardar_tarjeta";
+            _httpContextAccessor.HttpContext.Items["AuditDescripcion"] = $"Tarjeta terminada en {tarjetaGuardada.UltimosDigitos} guardada correctamente.";
+        }
 
         var responseDto = new TarjetaResponseDto
         {

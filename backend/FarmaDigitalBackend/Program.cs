@@ -102,6 +102,9 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Middleware de auditoría: registra logs en cada petición
+app.UseMiddleware<FarmaDigitalBackend.Middleware.AuditMiddleware>();
+
 /// Mapeo de controladores.
 app.MapControllers();
 

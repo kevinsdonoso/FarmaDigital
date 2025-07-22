@@ -17,6 +17,7 @@ namespace FarmaDigitalBackend.Services
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly ITwoFactorRepository _twoFactorRepository;
         private readonly ILogAuditoriaService _logService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public CompraService(
             IOrdenRepository ordenRepository,
@@ -27,9 +28,9 @@ namespace FarmaDigitalBackend.Services
             ITwoFactorService twoFactorService,
             IUsuarioRepository usuarioRepository,
             ITwoFactorRepository twoFactorRepository,
-            ILogAuditoriaService logAuditoriaService
-
-            )
+            ILogAuditoriaService logAuditoriaService,
+            IHttpContextAccessor httpContextAccessor
+        )
         {
             _ordenRepository = ordenRepository;
             _facturaRepository = facturaRepository;
@@ -40,8 +41,7 @@ namespace FarmaDigitalBackend.Services
             _usuarioRepository = usuarioRepository;
             _twoFactorRepository = twoFactorRepository;
             _logService = logAuditoriaService;
-
-
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IActionResult> ProcesarCompraAsync(CompraDto compraDto)
@@ -68,16 +68,11 @@ namespace FarmaDigitalBackend.Services
             await ActualizarStockProductosAsync(compraDto.Productos);
 
             var factura = await GenerarFacturaAsync(ordenCreada, detallesCompra);
-            var ipCliente = _userContextService.GetClientIp();
-
-            // Ejemplo de registro de auditoría, puedes ajustar los parámetros según tu implementación
-            await _logService.RegistrarAsync(
-                userId,
-                "pago_realizado",
-                $"Compra confirmada - Orden #{ordenCreada.IdOrden}, Factura {factura.NumeroFactura}, Total: ${total:F2}, Método: {orden.MetodoPago}",
-                ipCliente
-
-            );
+            if (_httpContextAccessor.HttpContext != null)
+            {
+                _httpContextAccessor.HttpContext.Items["AuditAccion"] = "compra_exitosa";
+                _httpContextAccessor.HttpContext.Items["AuditDescripcion"] = $"Compra realizada exitosamente. Orden #{ordenCreada.IdOrden}, Factura #{factura.NumeroFactura}, Total: {total:C}";
+            }
             var response = new CompraResponseDto
             {
                 IdOrden = ordenCreada.IdOrden,
@@ -163,7 +158,8 @@ namespace FarmaDigitalBackend.Services
                         _userContextService,
                         _twoFactorRepository,
                         _twoFactorService,
-                        _logService
+                        _logService,
+                        _httpContextAccessor
                     );
                     var saveResult = await tarjetaService.GuardarTarjetaAsync(compraDto.NuevaTarjeta);
                     if (saveResult is not OkObjectResult)
@@ -189,13 +185,7 @@ namespace FarmaDigitalBackend.Services
                 var twoFactorResult = await _twoFactorService.ValidateCode(twoFactor.SecretKey, compraDto.Codigo2FA);
                 if (!twoFactorResult)
                 {
-                    var ipCliente = _userContextService.GetClientIp();
-                    await _logService.RegistrarAsync(
-                        userId,
-                        "pago_fallido",
-                        "Intento de compra con tarjeta fallido. Código 2FA inválido.",
-                        ipCliente
-                    );
+                    // Auditoría automática por middleware
 
                     return new BadRequestObjectResult(new { success = false, message = "Código de doble factor inválido" });
                 }
