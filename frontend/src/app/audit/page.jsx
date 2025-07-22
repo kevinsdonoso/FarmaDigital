@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Shield } from 'lucide-react'; 
 import { AuditTable } from '@/components/audit/AuditTable';
-import Header from "@/components/ui/Header";
+import Header from '@/components/ui/Header';
 import { getLogsAuditoria } from '@/lib/api';
 
 const acciones = [
@@ -13,16 +13,20 @@ const acciones = [
   { value: 'codigo_2fa_invalido', label: 'Código 2FA Inválido' },
   { value: 'login_exitoso', label: 'Login Exitoso' },
   { value: '2fa_activado_despues_de_registro', label: '2FA Activado' },
-  { value: 'primer_login_exitoso', label: 'Primer Login Exitoso' }
-  { value: 'intento_login_fallido', label: 'Intento Login Fallido' }
+  { value: 'primer_login_exitoso', label: 'Primer Login Exitoso' },
+  { value: 'intento_login_fallido', label: 'Intento Login Fallido' },
+  { value: 'eliminar_producto', label: 'Eliminar Producto' },
+  { value: 'actualizar_producto', label: 'Editar Producto' },
+  { value: 'crear_producto', label: 'Crear Producto' },
+  { value: 'compra_exitosa', label: 'Compra Exitosa' }
 ];
 
 const roles = [
   { value: '', label: 'Todos los roles' },
-  { value: 'usuario_no_logueado' label: 'UsuarioNoLogeado' },
   { value: 'vendedor', label: 'Vendedor' },
   { value: 'auditor', label: 'Auditor' },
-  { value: 'cliente', label: 'Cliente' }
+  { value: 'cliente', label: 'Cliente' },
+  { value: 'desconocido', label: 'Desconocido' }
 ];
 
 // Simulación de fetch de logs (reemplaza por tu fetch real)
