@@ -14,11 +14,12 @@ const acciones = [
   { value: 'login_exitoso', label: 'Login Exitoso' },
   { value: '2fa_activado_despues_de_registro', label: '2FA Activado' },
   { value: 'primer_login_exitoso', label: 'Primer Login Exitoso' }
+  { value: 'intento_login_fallido', label: 'Intento Login Fallido' }
 ];
 
 const roles = [
   { value: '', label: 'Todos los roles' },
-  { value: 'admin', label: 'Admin' },
+  { value: 'usuario_no_logueado' label: 'UsuarioNoLogeado' },
   { value: 'vendedor', label: 'Vendedor' },
   { value: 'auditor', label: 'Auditor' },
   { value: 'cliente', label: 'Cliente' }

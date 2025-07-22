@@ -8,58 +8,97 @@ import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
+// ✨ SOLO IMPORTAR LO NECESARIO PARA LOGS ANÓNIMOS
+import { logAnonymousAction, anonymousActions } from '@/lib/audit';
+import { checkRateLimit } from '@/lib/security';
 
-export default function LoginPage() {
-  const [form, setForm] = useState({ username: '', password: '' });
+// ✨ Seguridad
+import { useSecureForm } from '@/hooks/useSecureForm';
+import { logUserAction, auditableActions } from '@/lib/audit';
+import { checkRateLimit } from '@/lib/security';
+
+export default function LoginPage() { 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
   const { login: contextLogin } = useAuth();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // ✨ Reglas de validación
+  const validationRules = {
+    username: {
+      type: 'dni',
+      message: 'DNI debe tener entre 8 y 10 dígitos'
+    },
+    password: {
+      type: 'password',
+      message: 'La contraseña debe tener al menos 8 caracteres'
+    },
+    formType: 'login'
   };
+
+  // ✨ Hook seguro
+  const {
+    formData,
+    errors,
+    handleChange,
+    handleSubmit: secureSubmit
+  } = useSecureForm({ username: '', password: '' }, validationRules);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
 
-    try {
-      const res = await loginUser(form);
-
-      if (res.error) {
-        setError(res.error);
-        return;
-      }
-
-      // Requiere 2FA
-      if (res.requires2FA === true) {
-        sessionStorage.setItem('pendingLogin', JSON.stringify({
-          username: form.username,
-          password: form.password,
-          qr: res.qrCode || null
-        }));
-
-        if (res.qrCode) {
-          router.push('/login/two-factor-setup');
-        } else {
-          router.push('/login/two-factor');
-        }
-        return;
-      }
-
-      // Login exitoso
-      if (res.success && res.access_token) {
-        contextLogin(res.user_info);
-        router.push('/dashboard');
-      }
-
-    } catch (err) {
-      setError(err.message || 'Error de conexión');
-    } finally {
-      setLoading(false);
+    // ✨ Protección contra fuerza bruta
+    if (!checkRateLimit('login_attempt', 5, 300000)) {
+      setError('Demasiados intentos. Intenta en 5 minutos.');
+      return;
     }
+
+    await secureSubmit(async (secureData) => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const res = await loginUser(secureData);
+
+        if (res.error) {
+          // ✨ Registro de intento fallido
+          await logAnonymousAction(anonymousActions.FAILED_LOGIN, {
+            username: secureData.username,
+            reason: res.error
+          });
+          setError(res.error);
+          return;
+        }
+
+        // ✨ Autenticación con 2FA
+        if (res.requires2FA === true) {
+          sessionStorage.setItem('pendingLogin', JSON.stringify({
+            username: secureData.username,
+            password: secureData.password,
+            qr: res.qrCode || null
+          }));
+
+          router.push(res.qrCode ? '/login/two-factor-setup' : '/login/two-factor');
+          return;
+        }
+
+        // ✅ Login exitoso
+        if (res.success && res.access_token) {
+          contextLogin(res.user_info);
+          router.push('/dashboard');
+        }
+
+      } catch (err) {
+        // ✨ Registro de error inesperado
+        await logAnonymousAction(anonymousActions.FAILED_LOGIN, {
+          username: secureData.username,
+          error: err.message
+        });
+        setError(err.message || 'Error de conexión');
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   return (
@@ -75,24 +114,26 @@ export default function LoginPage() {
             label="DNI"
             name="username"
             type="text"
-            value={form.username}
+            value={formData.username}
             onChange={handleChange}
             placeholder="Ingresa tu DNI o usuario"
             required
           />
+          {errors.username && <Alert type="error">{errors.username}</Alert>}
 
           <PasswordInput
             label="Contraseña"
             name="password"
-            value={form.password}
+            value={formData.password}
             onChange={handleChange}
             placeholder="Ingresa tu contraseña"
             required
           />
+          {errors.password && <Alert type="error">{errors.password}</Alert>}
 
-          {error && (
+          {(error || errors.submit) && (
             <Alert type="error">
-              {error}
+              {error || errors.submit}
             </Alert>
           )}
 
