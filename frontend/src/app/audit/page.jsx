@@ -4,6 +4,7 @@ import { Shield } from 'lucide-react';
 import { AuditTable } from '@/components/audit/AuditTable';
 import Header from '@/components/ui/Header';
 import { getLogsAuditoria } from '@/lib/api';
+import LogoutButton from '@/components/ui/LogoutButton';
 
 const acciones = [
   { value: '', label: 'Todas las acciones' },
@@ -21,31 +22,21 @@ const acciones = [
   { value: 'compra_exitosa', label: 'Compra Exitosa' }
 ];
 
-const roles = [
-  { value: '', label: 'Todos los roles' },
-  { value: 'vendedor', label: 'Vendedor' },
-  { value: 'auditor', label: 'Auditor' },
-  { value: 'cliente', label: 'Cliente' },
-  { value: 'desconocido', label: 'Desconocido' }
-];
-
 // Simulación de fetch de logs (reemplaza por tu fetch real)
 async function fetchLogs() {
   try {
-    const data = await getLogsAuditoria();
-    console.log('✅ Logs obtenidos:', data);
-    return data;
+    const response = await getLogsAuditoria();
+    console.log('✅ Logs obtenidos:', response);
+    // Extrae el array de logs
+    return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('❌ Error al obtener logs:', error);
-    // Retornar array vacío en caso de error
     return [];
   }
 }
-
 export default function AuditPage() {
   const [logs, setLogs] = useState([]);
   const [accionFilter, setAccionFilter] = useState('');
-  const [rolFilter, setRolFilter] = useState('');
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -73,16 +64,14 @@ export default function AuditPage() {
         log.accion.toLowerCase() === accionFilter.toLowerCase()
       );
     }
-    if (rolFilter) {
-      result = result.filter(log =>
-        log.usuario?.role?.toLowerCase() === rolFilter.toLowerCase()
-      );
-    }
     setFilteredLogs(result);
-  }, [accionFilter, rolFilter, logs]);
+  }, [accionFilter, logs]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="flex justify-end mb-4">
+        <LogoutButton />
+      </div>      
       <Header 
         title="Sistema de Auditoría" 
         subtitle={`${filteredLogs.length} registros encontrados`}
@@ -100,11 +89,8 @@ export default function AuditPage() {
            <AuditTable
             logs={filteredLogs}
             accionFilter={accionFilter}
-            rolFilter={rolFilter}
             acciones={acciones}
-            roles={roles}
             onAccionChange={e => setAccionFilter(e.target.value)}
-            onRolChange={e => setRolFilter(e.target.value)}
             loading={loading}
           />
         </div>
