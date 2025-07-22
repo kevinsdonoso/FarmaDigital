@@ -1,10 +1,10 @@
 import DOMPurify from 'dompurify';
 
-// #01 Anti-XSS: Sanitización de entrada de datos
+// Sanitización de entrada de datos
 export const sanitizeInput = (input) => {
-  if (typeof input !== 'string') return input;
+  if (input === null || input === undefined) return '';
+  if (typeof input !== 'string') return String(input);
   
-  // Configuración estricta para DOMPurify
   return DOMPurify.sanitize(input, { 
     ALLOWED_TAGS: [], 
     ALLOWED_ATTR: [],
@@ -12,43 +12,119 @@ export const sanitizeInput = (input) => {
   });
 };
 
-// #02 Validación de tipos de archivo segura
-export const validateFileType = (file, allowedTypes = ['image/jpeg', 'image/png', 'application/pdf']) => {
-  if (!file) return false;
+// Validación de entrada de usuario
+export const validateUserInput = (input, type = 'text', options = {}) => {
+  if (input === null || input === undefined) return false;
   
-  // Verificar tipo MIME y extensión
-  const fileExtension = file.name.split('.').pop()?.toLowerCase();
-  const allowedExtensions = {
-    'image/jpeg': ['jpg', 'jpeg'],
-    'image/png': ['png'],
-    'application/pdf': ['pdf']
-  };
-  
-  const isValidType = allowedTypes.includes(file.type);
-  const isValidExtension = allowedTypes.some(type => 
-    allowedExtensions[type]?.includes(fileExtension)
-  );
-  
-  const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB max
-  
-  return isValidType && isValidExtension && isValidSize;
+  const {
+    minLength = 0,
+    maxLength = 1000,
+    min = -Infinity,
+    max = Infinity,
+    allowEmpty = false
+  } = options;
+
+  switch (type) {
+    case 'text':
+      if (typeof input !== 'string') return false;
+      if (!allowEmpty && input.trim().length === 0) return false;
+      return input.length >= minLength && input.length <= maxLength;
+      
+    case 'number':
+      const num = Number(input);
+      if (isNaN(num)) return false;
+      return num >= min && num <= max;
+    
+    case 'email':
+      if (typeof input !== 'string') return false;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(input) && input.length <= maxLength;
+      
+    case 'dni':
+      if (typeof input !== 'string') return false;
+      const dniRegex = /^\d{8,10}$/;
+      return dniRegex.test(input);
+      
+    case 'password':
+      if (typeof input !== 'string') return false;
+      return input.length >= Math.max(minLength, 8) && input.length <= maxLength;
+      
+    case 'phone':
+      if (typeof input !== 'string') return false;
+      const phoneRegex = /^\+?[\d\s\-\(\)]{10,15}$/;
+      return phoneRegex.test(input);
+
+    case 'expirationDate':
+      if (typeof input !== 'string') return false;
+      const dateRegex = /^(0[1-9]|1[0-2])\/\d{4}$/; // MM/YYYY format
+      return dateRegex.test(input) && input.length === 7;
+      
+    default:
+      return typeof input === 'string' && input.length >= minLength && input.length <= maxLength;
+  }
 };
 
-// #03 Generación de CSP headers
-export const getCSPHeader = () => ({
-  'Content-Security-Policy': 
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://vercel.live; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "font-src 'self' https://fonts.gstatic.com; " +
-    "img-src 'self' data: https: blob:; " +
-    "connect-src 'self' https://farmadigital-production.up.railway.app https://api.qrserver.com; " +
-    "frame-ancestors 'none'; " +
-    "base-uri 'self'; " +
-    "form-action 'self';"
-});
+/*/ Validación específica para tarjetas de crédito
+export const validateCreditCard = {
+  number: (number) => {
+    const cleaned = number.replace(/\s+/g, '');
+    return validateUserInput(cleaned, 'text', { minLength: 13, maxLength: 19 });
+  },
+  
+  expiration: (date) => {
+    if (!/^\d{2}\/\d{4}$/.test(date)) return false;
+    
+    const [month, year] = date.split('/');
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+    
+    if (monthNum < 1 || monthNum > 12) return false;
+    
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    
+    if (yearNum < currentYear) return false;
+    if (yearNum === currentYear && monthNum < currentMonth) return false;
+    
+    return true;
+  },
+  
+  cvv: (cvv) => {
+    return validateUserInput(cvv, 'text', { minLength: 3, maxLength: 4 });
+  },
+  
+  name: (name) => {
+    return validateUserInput(name, 'text', { minLength: 2, maxLength: 50 }) && 
+           validateCodeInjection(name) && 
+           validateSQLInjection(name);
+  }
+};
 
-// #04 Protección contra inyección de código
+// Formateadores para UI
+export const formatCardNumber = (input) => {
+  const digits = input.replace(/\D/g, '');
+  let formatted = '';
+  
+  for (let i = 0; i < Math.min(digits.length, 16); i++) {
+    if (i > 0 && i % 4 === 0) formatted += ' ';
+    formatted += digits[i];
+  }
+  
+  return formatted;
+};
+
+export const formatExpirationDate = (input) => {
+  const digits = input.replace(/\D/g, '');
+  const month = digits.slice(0, 2);
+  const year = digits.slice(2, 6);
+  
+  if (digits.length >= 3) {
+    return `${month}/${year}`;
+  }
+  return month;
+};
+*/
+// Protección contra inyección de código
 export const validateCodeInjection = (input) => {
   if (!input || typeof input !== 'string') return true;
   
@@ -68,7 +144,7 @@ export const validateCodeInjection = (input) => {
   return !dangerousPatterns.some(pattern => pattern.test(input));
 };
 
-// #05 Validación de SQL Injection
+// Validación de SQL Injection
 export const validateSQLInjection = (input) => {
   if (!input || typeof input !== 'string') return true;
   
@@ -84,7 +160,7 @@ export const validateSQLInjection = (input) => {
   return !sqlPatterns.some(pattern => pattern.test(input));
 };
 
-// #06 Rate limiting básico (cliente)
+// Rate limiting básico (cliente)
 const rateLimitStore = new Map();
 
 export const checkRateLimit = (key, maxRequests = 5, windowMs = 60000) => {
@@ -98,10 +174,61 @@ export const checkRateLimit = (key, maxRequests = 5, windowMs = 60000) => {
   const requests = rateLimitStore.get(key).filter(time => time > windowStart);
   
   if (requests.length >= maxRequests) {
-    return false; // Rate limit exceeded
+    return false;
   }
   
   requests.push(now);
   rateLimitStore.set(key, requests);
   return true;
 };
+
+
+
+
+
+/*/ ✨ NUEVA FUNCIÓN: Validación de entrada de usuario
+export const validateUserInput = (input, type = 'text', options = {}) => {
+  if (input === null || input === undefined) return false;
+  
+  const {
+    minLength = 0,
+    maxLength = 1000,
+    min = -Infinity,
+    max = Infinity,
+    allowEmpty = false
+  } = options;
+
+  switch (type) {
+    case 'text':
+      if (typeof input !== 'string') return false;
+      if (!allowEmpty && input.trim().length === 0) return false;
+      return input.length >= minLength && input.length <= maxLength;
+      
+    case 'number':
+      const num = Number(input);
+      if (isNaN(num)) return false;
+      return num >= min && num <= max;
+      case 'email':
+      if (typeof input !== 'string') return false;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(input) && input.length <= maxLength;
+      
+    case 'dni':
+      if (typeof input !== 'string') return false;
+      const dniRegex = /^\d{8,10}$/;
+      return dniRegex.test(input);
+      
+    case 'password':
+      if (typeof input !== 'string') return false;
+      return input.length >= Math.max(minLength, 8) && input.length <= maxLength;
+      
+    case 'phone':
+      if (typeof input !== 'string') return false;
+      const phoneRegex = /^\+?[\d\s\-\(\)]{10,15}$/;
+      return phoneRegex.test(input);
+      
+    default:
+      return typeof input === 'string' && input.length >= minLength && input.length <= maxLength;
+  }
+};
+*/

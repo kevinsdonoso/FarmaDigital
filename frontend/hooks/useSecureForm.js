@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import { validateUserInput, sanitizeInput } from '@/lib/security';
-import { logUserAction, auditableActions } from '@/lib/audit';
 import { checkRateLimit } from '@/lib/security';
 
 export const useSecureForm = (initialData = {}, validationRules = {}) => {
@@ -16,19 +15,10 @@ export const useSecureForm = (initialData = {}, validationRules = {}) => {
     // Sanitizar entrada
     const sanitizedValue = sanitizeInput(value);
     
-    // Detectar intento de inyección
-    if (value !== sanitizedValue) {
-      logUserAction(auditableActions.SUSPICIOUS_ACTIVITY, {
-        field: name,
-        originalValue: value.substring(0, 50),
-        sanitizedValue: sanitizedValue.substring(0, 50),
-        attempt: 'potential_injection',
-        timestamp: new Date().toISOString()
-      });
-    }
-    
     // Validar según el tipo
     const isValid = validateUserInput(sanitizedValue, rule.type, rule.options);
+    // 👇 Agrega este log para ver el estado de cada campo
+    console.log(`[VALIDACIÓN] Campo: ${name}, Valor: "${sanitizedValue}", Tipo: ${rule.type}, ¿Válido?:`, isValid);
     
     if (!isValid) {
       setErrors(prev => ({
@@ -50,7 +40,7 @@ export const useSecureForm = (initialData = {}, validationRules = {}) => {
     const { name, value, type, checked } = e.target;
     const fieldValue = type === 'checkbox' ? checked : value;
     
-    // Rate limiting por campo
+    /* //* Rate limiting por campo
     const rateLimitKey = `form_${name}`;
     if (!checkRateLimit(rateLimitKey, 10, 60000)) {
       setErrors(prev => ({
@@ -58,66 +48,100 @@ export const useSecureForm = (initialData = {}, validationRules = {}) => {
         [name]: 'Demasiados intentos. Espera un momento.'
       }));
       return;
-    }
-    
-    // Validar en tiempo real
-    validateField(name, fieldValue);
-    
+    }  */
+       
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : sanitizeInput(fieldValue)
     }));
   }, [validateField]);
 
-  const handleSubmit = useCallback(async (submitFn) => {
-    // Rate limiting para envíos
-    if (!checkRateLimit('form_submit', 3, 300000)) { // 3 intentos en 5 minutos
-      setErrors({ submit: 'Demasiados intentos de envío. Espera 5 minutos.' });
-      return;
+const [isBlocked, setIsBlocked] = useState(false);
+const [blockTime, setBlockTime] = useState(0);
+
+const handleSubmit = useCallback(async (submitFn, validateOnly = false) => {
+  if (isBlocked) {
+    setErrors(prev => ({
+      ...prev,
+      submit: `Demasiados intentos. Espera ${Math.ceil(blockTime / 1000)} segundos.`
+    }));
+    return false;
+  }
+
+  // Validar todos los campos primero
+  let isFormValid = true;
+  Object.keys(validationRules).forEach(fieldName => {
+    if (!validateField(fieldName, formData[fieldName])) {
+      isFormValid = false;
     }
+  });
 
-    setIsSubmitting(true);
-    setAttemptCount(prev => prev + 1);
+  if (!isFormValid) {
+    if (!validateOnly) {
+      setErrors(prev => ({
+        ...prev,
+        submit: 'Por favor corrige los errores en el formulario'
+      }));
+    }
+    return false; // ❌ Formulario inválido
+  }
 
-    try {
-      // Validar todos los campos
-      let isFormValid = true;
-      Object.keys(validationRules).forEach(fieldName => {
-        if (!validateField(fieldName, formData[fieldName])) {
-          isFormValid = false;
+  if (validateOnly) return true; // ✅ Solo querías validar
+
+  // Rate limiting para envíos
+  if (!checkRateLimit('form_submit', 3, 300000)) {
+    setErrors({ submit: 'Demasiados intentos de envío. Espera 5 minutos.' });
+    setIsBlocked(true);
+    setBlockTime(60000); // 5 minutos en ms
+
+    // Timer para desbloquear
+    let interval = setInterval(() => {
+      setBlockTime(prev => {
+        if (prev <= 1000) {
+          clearInterval(interval);
+          setIsBlocked(false);
+          return 0;
         }
+        return prev - 1000;
       });
+    }, 1000);
 
-      if (!isFormValid) {
-        throw new Error('Por favor corrige los errores en el formulario');
-      }
+    return false;
+  }
 
-      await submitFn(formData);
-      
-      // Log éxito
-      logUserAction(auditableActions.FORM_SUBMITTED, {
-        formType: validationRules.formType || 'unknown',
-        attempt: attemptCount + 1
-      });
-      
-    } catch (error) {
-      // Log error
-      logUserAction(auditableActions.FORM_ERROR, {
-        formType: validationRules.formType || 'unknown',
-        error: error.message,
-        attempt: attemptCount + 1
-      });
-      
-      setErrors({ submit: error.message });
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [formData, validationRules, validateField, attemptCount]);
+  setIsSubmitting(true);
+  setAttemptCount(prev => prev + 1);
+
+  try {
+    await submitFn(formData);
+
+    logUserAction(auditableActions.FORM_SUBMITTED, {
+      formType: validationRules.formType || 'unknown',
+      attempt: attemptCount + 1
+    });
+
+    return true;
+  } catch (error) {
+    logUserAction(auditableActions.FORM_ERROR, {
+      formType: validationRules.formType || 'unknown',
+      error: error.message,
+      attempt: attemptCount + 1
+    });
+
+    setErrors({ submit: error.message });
+    return false;
+  } finally {
+    setIsSubmitting(false);
+  }
+}, [formData, validationRules, validateField, attemptCount]);
+
 
   return {
     formData,
     errors,
     isSubmitting,
+    isBlocked,
+    blockTime,
     handleChange,
     handleSubmit,
     validateField,

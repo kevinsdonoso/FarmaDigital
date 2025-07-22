@@ -46,7 +46,7 @@ const nextConfig = {
   
   // #22 Configuración de imágenes segura
   images: {
-    domains: ['localhost', 'farmadigital-production.up.railway.app'],
+    domains: ['localhost','api.qrserver.com', 'farmadigital-production.up.railway.app'],
     formats: ['image/webp', 'image/avif'],
   }
 };
