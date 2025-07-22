@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FarmaDigitalBackend.Migrations
 {
     [DbContext(typeof(FarmaDbContext))]
-    [Migration("20250720034757_InitialSchema")]
-    partial class InitialSchema
+    [Migration("20250722015903_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
