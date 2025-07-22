@@ -9,6 +9,7 @@ import ProductFilter from './ProductFilter';
 import Link from 'next/link';
 import Header from "@/components/ui/Header";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
+import LogoutButton from '@/components/ui/LogoutButton';
 
 // ✨ AGREGAR IMPORTS DE SEGURIDAD
 import { sanitizeInput, checkRateLimit, validateUserInput } from '@/lib/security';
@@ -94,14 +95,10 @@ export default function Products() {
       return;
     }
 
-    
-    if (!confirm('¿Estás seguro de que quieres eliminar este producto?')) {
-      return;
-    }
-
     try {
       await deleteProducto(sanitizedId);
       setProductos(productos.filter(p => p.idProducto !== sanitizedId));
+      await loadProductos();
     } catch (err) {
       console.error('Error deleting product:', err);
       alert('Error al eliminar producto: ' + sanitizeInput(err.message || 'Error desconocido'));
@@ -217,6 +214,9 @@ export default function Products() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="flex justify-end mb-4">
+        <LogoutButton />
+      </div> 
       <Header 
         title="Gestión de Productos" 
         showUserSwitcher={true} 

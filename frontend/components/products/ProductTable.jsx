@@ -176,10 +176,6 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
                             : productSafe.descripcion
                           }
                         </div>
-                        <div className="text-xs text-gray-400">
-                          {/* ✨ ID SANITIZADO */}
-                          ID: {productSafe.idProducto}
-                        </div>
                       </div>
                     </div>
                   </td>
@@ -277,7 +273,6 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
             <div className="bg-gray-100 rounded-md p-3">
               <div className="text-sm">
                 {/* ✨ DATOS SANITIZADOS EN MODAL */}
-                <p><strong>ID:</strong> {deleteModal.producto?.idProducto}</p>
                 <p><strong>Categoría:</strong> {deleteModal.producto?.categoria}</p>
                 <p><strong>Stock actual:</strong> {deleteModal.producto?.stock} unidades</p>
                 <p><strong>Precio:</strong> ${deleteModal.producto?.precio?.toFixed(2)}</p>
@@ -382,11 +377,6 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Mostrar ID del producto para debug */}
-      <div className="bg-gray-100 p-2 rounded text-sm text-gray-600">
-        Editando producto ID: {producto?.idProducto}
-      </div>
-
       <div>
         <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-1">
           Nombre del producto *

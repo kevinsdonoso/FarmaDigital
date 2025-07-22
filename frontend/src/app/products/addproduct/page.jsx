@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation';
 import { Package, Save, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
-import { addProducto } from '@/lib/api';
+import { addProducto , getUserFromToken } from '@/lib/api';
+import LogoutButton from '@/components/ui/LogoutButton';
 
 // ✨ AGREGAR IMPORTS DE SEGURIDAD
 import { sanitizeInput, checkRateLimit, validateUserInput } from '@/lib/security';
@@ -14,13 +15,14 @@ export default function AddProduct() {
   const router = useRouter();
   const { state: authState } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
     // ✨ USAR HOOK SEGURO PARA FORMULARIOS
   const {
 formData,
     setFormData,
     errors,
     setErrors,
-    handleSecureInputChange,
+    handleChange,
     validateField
   } = useSecureForm({
     nombre: '',
@@ -28,7 +30,8 @@ formData,
     precio: '',
     stock: '',
     categoria: '',
-    es_sensible: false
+    es_sensible: false,
+    creado_por: getUserFromToken()?.id_usuario
   });
 
   // ✨ VALIDACIÓN SEGURA DEL FORMULARIO
@@ -93,7 +96,7 @@ formData,
         stock: Math.floor(Number(formData.stock)), // Solo enteros
         categoria: sanitizeInput(formData.categoria),
         es_sensible: Boolean(formData.es_sensible),
-        creado_por: authState.user?.id_usuario || null
+        creado_por: getUserFromToken()?.id_usuario
       };
 
       // Validación final antes de enviar
@@ -103,12 +106,10 @@ formData,
 
       const nuevoProducto = await addProducto(productoData);
       
-      console.log('✅ Producto creado:', nuevoProducto);
-      alert('Producto agregado exitosamente!');
-      router.push('/products');
-      
-    } catch (error) {
-      console.error('❌ Error al crear producto:', error);
+      setSuccessMsg('¡Producto agregado exitosamente!');
+      setTimeout(() => setSuccessMsg(''), 3000); // Oculta el mensaje después de 3s
+    router.push('/products');
+  } catch (error) {
       alert('Error al crear el producto: ' + sanitizeInput(error.message || 'Error desconocido'));
     } finally {
       setLoading(false);
@@ -120,7 +121,7 @@ formData,
     const { name, value, type, checked } = e.target;
     
     // Usar función segura del hook
-    handleSecureInputChange(e);
+    handleChange(e);
 
     // Validaciones adicionales en tiempo real
     if (name === 'nombre' && value.length > 100) {
@@ -157,6 +158,9 @@ formData,
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="flex justify-end mb-4">
+        <LogoutButton />
+      </div> 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <Button
@@ -180,7 +184,11 @@ formData,
             </div>
           </div>
         </div>
-
+        {successMsg && (
+          <div className="mb-4 px-4 py-2 bg-green-100 border border-green-300 text-green-800 rounded-lg text-center font-medium shadow">
+            {successMsg}
+          </div>
+        )}
         <div className="bg-white rounded-lg shadow p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Nombre del producto */}
@@ -193,7 +201,7 @@ formData,
                 id="nombre"
                 name="nombre"
                 value={formData.nombre}
-                onChange={handleInputChange}
+                onChange={handleChange}
                 maxLength={100}
                 className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${
                   errors.nombre ? 'border-red-500' : 'border-gray-300'
