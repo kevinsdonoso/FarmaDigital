@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { getFacturaById, getTarjetas, procesarCompra } from "@/lib/api";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { loginUser } from '@/lib/api';
-import { login as authLogin } from '@/lib/auth';
 import { useAuth } from '@/context/AuthProvider';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
-import { useCart } from "@/context/CartContext";
 
 export default function LoginPage() {
   const [form, setForm] = useState({ username: '', password: '' });
@@ -30,10 +27,7 @@ export default function LoginPage() {
 
     try {
       const res = await loginUser(form);
-      
-      console.log('✅ Respuesta del servidor:', res);
 
-      // Error en credenciales
       if (res.error) {
         setError(res.error);
         return;
@@ -41,38 +35,23 @@ export default function LoginPage() {
 
       // Requiere 2FA
       if (res.requires2FA === true) {
+        sessionStorage.setItem('pendingLogin', JSON.stringify({
+          username: form.username,
+          password: form.password,
+          qr: res.qrCode || null
+        }));
+
         if (res.qrCode) {
-          // Usuario nuevo: primera vez configurando 2FA
-          console.log('🔄 Redirigiendo a two-factor-setup con QR');
-          const params = new URLSearchParams({
-            username: form.username,
-            password: form.password,
-            qr: res.qrCode
-          });
-          router.push(`/login/two-factor-setup?${params.toString()}`);
+          router.push('/login/two-factor-setup');
         } else {
-          // Usuario recurrente: ya tiene 2FA configurado
-          console.log('🔄 Redirigiendo a two-factor');
-          const params = new URLSearchParams({
-            username: form.username,
-            password: form.password
-          });
-          router.push(`/login/two-factor?${params.toString()}`);
+          router.push('/login/two-factor');
         }
         return;
       }
 
       // Login exitoso
       if (res.success && res.access_token) {
-        console.log('✅ Login exitoso directo');
-        
-        // Usar nuestro sistema de autenticación integrado
-        // El token ya se guardó en loginUser() con la función login()
-        
-        // Actualizar el contexto de Auth
         contextLogin(res.user_info);
-        
-        // Redirigir al dashboard
         router.push('/dashboard');
       }
 
@@ -138,259 +117,6 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-    </div>
-  );
-}
-
-export function FacturaDetallePage() {
-  const { id } = useParams();
-  const [factura, setFactura] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    async function fetchFactura() {
-      try {
-        const data = await getFacturaById(id);
-        setFactura(data);
-      } catch (err) {
-        setError(err.message || "Error al cargar la factura");
-      } finally {
-        setLoading(false);
-      }
-    }
-    if (id) fetchFactura();
-  }, [id]);
-
-  if (loading) return <div>Cargando factura...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
-  if (!factura) return <div>No se encontró la factura.</div>;
-
-  return (
-    <div className="max-w-xl mx-auto bg-white p-6 rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">Factura #{factura.id}</h1>
-      <div>
-        <strong>Fecha:</strong> {factura.fecha}
-      </div>
-      <div>
-        <strong>Cliente:</strong> {factura.cliente?.nombre}
-      </div>
-      <div>
-        <strong>Total:</strong> ${factura.total}
-      </div>
-      <h2 className="mt-4 font-semibold">Productos:</h2>
-      <ul>
-        {factura.productos?.map((prod) => (
-          <li key={prod.idProducto}>
-            {prod.nombre} x {prod.cantidad} = ${prod.precio * prod.cantidad}
-          </li>
-        ))}
-      </ul>
-      {/* Puedes mostrar más detalles según la estructura de tu backend */}
-    </div>
-  );
-}
-
-export function CarritoPage() {
-  const { cart, total, removeFromCart, updateQuantity, clearCart } = useCart();
-  const router = useRouter();
-
-  return (
-    <div>
-      <h1>Carrito de compras</h1>
-      {cart.length === 0 ? (
-        <p>Tu carrito está vacío.</p>
-      ) : (
-        <>
-          <ul>
-            {cart.map((item) => (
-              <li key={item.id}>
-                {item.nombre} x
-                <input
-                  type="number"
-                  min={1}
-                  value={item.quantity}
-                  onChange={e => updateQuantity(item.id, Number(e.target.value))}
-                  className="w-16 mx-2"
-                />
-                = ${item.precio * item.quantity}
-                <button onClick={() => removeFromCart(item.id)}>Eliminar</button>
-              </li>
-            ))}
-          </ul>
-          <div>Total: ${total}</div>
-          <button onClick={() => router.push("/pago")}>Pagar</button>
-          <button onClick={clearCart}>Vaciar carrito</button>
-        </>
-      )}
-    </div>
-  );
-}
-
-export function PagoPage() {
-  const { cart, total, clearCart } = useCart();
-  const router = useRouter();
-  const [tarjetas, setTarjetas] = useState([]);
-  const [metodoPago, setMetodoPago] = useState("tarjeta_existente");
-  const [idTarjeta, setIdTarjeta] = useState("");
-  const [nuevaTarjeta, setNuevaTarjeta] = useState({
-    numeroTarjeta: "",
-    fechaExpiracion: "",
-    cvv: "",
-    nombreTitular: "",
-    esPrincipal: false,
-    codigo2FA: ""
-  });
-  const [codigo2FA, setCodigo2FA] = useState("");
-  const [guardarTarjeta, setGuardarTarjeta] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    async function fetchTarjetas() {
-      try {
-        const res = await getTarjetas();
-        setTarjetas(res.data || []);
-        if (!res.data || res.data.length === 0) setMetodoPago("nueva_tarjeta");
-      } catch {
-        setTarjetas([]);
-        setMetodoPago("nueva_tarjeta");
-      }
-    }
-    fetchTarjetas();
-  }, []);
-
-  const handlePagar = async (e) => {
-    e.preventDefault();
-    setError("");
-    try {
-      let payload = {
-        productos: cart.map(item => ({
-          idProducto: item.id,
-          cantidad: item.quantity
-        })),
-        metodoPago,
-        guardarTarjeta
-      };
-
-      if (metodoPago === "tarjeta_existente") {
-        payload.idTarjeta = idTarjeta;
-        payload.codigo2FA = codigo2FA;
-      } else {
-        payload.nuevaTarjeta = { ...nuevaTarjeta };
-      }
-
-      const res = await procesarCompra(payload);
-      clearCart();
-      router.push(`/factura/${res.idFactura || res.factura?.id}`);
-    } catch (err) {
-      setError(err.message || "Error al procesar el pago");
-    }
-  };
-
-  return (
-    <div>
-      <h1>Pagar</h1>
-      <form onSubmit={handlePagar}>
-        {tarjetas.length > 0 && (
-          <>
-            <label>
-              <input
-                type="radio"
-                checked={metodoPago === "tarjeta_existente"}
-                onChange={() => setMetodoPago("tarjeta_existente")}
-              />
-              Usar tarjeta guardada
-            </label>
-            <select
-              value={idTarjeta}
-              onChange={e => setIdTarjeta(e.target.value)}
-              disabled={metodoPago !== "tarjeta_existente"}
-            >
-              <option value="">Selecciona una tarjeta</option>
-              {tarjetas.map(t => (
-                <option key={t.idTarjeta} value={t.idTarjeta}>
-                  {t.tipoTarjeta} ****{t.ultimosDigitos} - {t.nombreTitular}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Código 2FA"
-              value={codigo2FA}
-              onChange={e => setCodigo2FA(e.target.value)}
-              disabled={metodoPago !== "tarjeta_existente"}
-              required={metodoPago === "tarjeta_existente"}
-            />
-            <hr />
-            <label>
-              <input
-                type="radio"
-                checked={metodoPago === "nueva_tarjeta"}
-                onChange={() => setMetodoPago("nueva_tarjeta")}
-              />
-              Usar nueva tarjeta
-            </label>
-          </>
-        )}
-        {metodoPago === "nueva_tarjeta" && (
-          <div>
-            <input
-              type="text"
-              placeholder="Número de tarjeta"
-              value={nuevaTarjeta.numeroTarjeta}
-              onChange={e => setNuevaTarjeta({ ...nuevaTarjeta, numeroTarjeta: e.target.value })}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Fecha de expiración (MM/YYYY)"
-              value={nuevaTarjeta.fechaExpiracion}
-              onChange={e => setNuevaTarjeta({ ...nuevaTarjeta, fechaExpiracion: e.target.value })}
-              required
-            />
-            <input
-              type="text"
-              placeholder="CVV"
-              value={nuevaTarjeta.cvv}
-              onChange={e => setNuevaTarjeta({ ...nuevaTarjeta, cvv: e.target.value })}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Nombre del titular"
-              value={nuevaTarjeta.nombreTitular}
-              onChange={e => setNuevaTarjeta({ ...nuevaTarjeta, nombreTitular: e.target.value })}
-              required
-            />
-            <label>
-              <input
-                type="checkbox"
-                checked={nuevaTarjeta.esPrincipal}
-                onChange={e => setNuevaTarjeta({ ...nuevaTarjeta, esPrincipal: e.target.checked })}
-              />
-              Hacer principal
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={guardarTarjeta}
-                onChange={e => setGuardarTarjeta(e.target.checked)}
-              />
-              Guardar tarjeta para futuras compras
-            </label>
-            <input
-              type="text"
-              placeholder="Código 2FA"
-              value={nuevaTarjeta.codigo2FA}
-              onChange={e => setNuevaTarjeta({ ...nuevaTarjeta, codigo2FA: e.target.value })}
-              required
-            />
-          </div>
-        )}
-        <div>Total: ${total}</div>
-        {error && <div className="text-red-500">{error}</div>}
-        <button type="submit">Pagar</button>
-      </form>
     </div>
   );
 }
