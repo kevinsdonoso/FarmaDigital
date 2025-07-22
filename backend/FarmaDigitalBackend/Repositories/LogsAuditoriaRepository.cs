@@ -2,6 +2,7 @@ using FarmaDigitalBackend.Data;
 using FarmaDigitalBackend.Models;
 using FarmaDigitalBackend.Repositories.Interfaces;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace FarmaDigitalBackend.Repositories
 {
@@ -19,6 +20,12 @@ namespace FarmaDigitalBackend.Repositories
         {
             _context.LogsAuditoria.Add(log);
             await _context.SaveChangesAsync();
+        }
+        public async Task<IEnumerable<LogAuditoria>> GetAllAsync()
+        {
+            return await _context.LogsAuditoria
+                .OrderByDescending(l => l.CreadoEn)
+                .ToListAsync();
         }
     }
 }

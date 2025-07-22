@@ -25,5 +25,11 @@ namespace FarmaDigitalBackend.Controllers
             await _logsRepo.RegistrarAsync(log);
             return Ok(new { success = true });
         }
+
+        public async Task<IActionResult> GetAll()
+        {
+            var logs = await _logsRepo.GetAllAsync();
+            return Ok(logs);
+        }
     }
 }

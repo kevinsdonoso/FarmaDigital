@@ -417,7 +417,7 @@ export async function procesarCompra(payload) {
 //logs
 export async function getLogsAuditoria() {
   try {
-    const response = await axios.get('/api/auditoria/logs');
+    const response = await axios.get('/api/LogsAuditoria');
     return response.data;
   } catch (error) {
     console.error('Error al obtener logs de auditoría:', error);
