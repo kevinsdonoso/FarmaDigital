@@ -10,6 +10,9 @@ import Link from 'next/link';
 import Header from "@/components/ui/Header";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
 
+// ✨ AGREGAR IMPORTS DE SEGURIDAD
+import { sanitizeInput, checkRateLimit, validateUserInput } from '@/lib/security';
+
 export default function Products() {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,56 +28,157 @@ export default function Products() {
     loadProductos();
   }, []);
 
+    // ✨ FUNCIÓN PARA SANITIZAR PRODUCTOS
+  const sanitizeProductsData = (productosData) => {
+    if (!Array.isArray(productosData)) return [];
+    
+    return productosData.map(producto => ({
+      ...producto,
+      idProducto: producto.idProducto || producto.id,
+      nombre: sanitizeInput(producto.nombre || ''),
+      descripcion: sanitizeInput(producto.descripcion || ''),
+      categoria: sanitizeInput(producto.categoria || ''),
+      precio: Math.max(0, Number(producto.precio) || 0),
+      stock: Math.max(0, Number(producto.stock) || 0),
+      es_sensible: Boolean(producto.es_sensible)
+    }));
+  };
+
   const loadProductos = async () => {
     try {
       setLoading(true);
-
       setError(null);
+      
       const data = await getProductos();
-      setProductos(data);
+      
+      // ✨ SANITIZAR DATOS DE PRODUCTOS
+      const sanitizedData = sanitizeProductsData(data);
+      setProductos(sanitizedData);
+      
     } catch (err) {
-      setError('Error al cargar productos: ' + err.message);
       console.error('Error loading products:', err);
+      setError(sanitizeInput(err.message || 'Error al cargar productos'));
     } finally {
       setLoading(false);
     }
   };
 
+// ✨ FILTRADO SEGURO CON SANITIZACIÓN
   const filteredProductos = productos.filter(producto => {
-    const matchesSearch = producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         producto.categoria.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === '' || producto.categoria === filterCategory;
+    // Sanitizar término de búsqueda
+    const sanitizedSearchTerm = sanitizeInput(searchTerm.toLowerCase());
+    const sanitizedFilterCategory = sanitizeInput(filterCategory);
+    
+    const matchesSearch = producto.nombre.toLowerCase().includes(sanitizedSearchTerm) ||
+                         producto.categoria.toLowerCase().includes(sanitizedSearchTerm);
+    const matchesCategory = sanitizedFilterCategory === '' || producto.categoria === sanitizedFilterCategory;
     return matchesSearch && matchesCategory;
   });
 
+  // ✨ FUNCIÓN SEGURA PARA ELIMINAR PRODUCTO
   const handleDeleteProduct = async (id) => {
+    // Rate limiting para prevenir spam de eliminaciones
+    if (!checkRateLimit(`delete_product_${id}`, 3, 60000)) {
+      alert('Demasiadas eliminaciones. Espera un momento.');
+      return;
+    }
+
+    // Validar ID
+    const sanitizedId = sanitizeInput(id);
+    if (!validateUserInput(sanitizedId, 'number')) {
+      alert('ID de producto no válido');
+      return;
+    }
+
+    if (!confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+      return;
+    }
+
+    
+    if (!confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+      return;
+    }
+
     try {
-      await deleteProducto(id);
-      // ✅ CAMBIAR A idProducto para el filtro
-      setProductos(productos.filter(p => p.idProducto !== id));
+      await deleteProducto(sanitizedId);
+      setProductos(productos.filter(p => p.idProducto !== sanitizedId));
     } catch (err) {
-      alert('Error al eliminar producto: ' + err.message);
       console.error('Error deleting product:', err);
+      alert('Error al eliminar producto: ' + sanitizeInput(err.message || 'Error desconocido'));
     }
   };
 
-const handleEditProduct = async () => {
-  // Solo recargar productos después de editar
-  console.log('🔄 Recargando productos después de editar...');
-  await loadProductos();
-};
+// ✨ FUNCIÓN SEGURA PARA EDITAR
+  const handleEditProduct = async () => {
+    // Rate limiting para recargas
+    if (!checkRateLimit('reload_products', 10, 30000)) {
+      console.warn('Rate limit excedido para recargar productos');
+      return;
+    }
 
- const handleSaveEdit = async (id, productData) => {
+    console.log('🔄 Recargando productos después de editar...');
+    await loadProductos();
+  };
+
+
+ // ✨ FUNCIÓN SEGURA PARA GUARDAR EDICIÓN
+  const handleSaveEdit = async (id, productData) => {
+    // Rate limiting para ediciones
+    if (!checkRateLimit(`edit_product_${id}`, 5, 60000)) {
+      alert('Demasiadas ediciones. Espera un momento.');
+      return;
+    }
+
+    // Validar ID
+    const sanitizedId = sanitizeInput(id);
+    if (!validateUserInput(sanitizedId, 'number')) {
+      alert('ID de producto no válido');
+      return;
+    }
+
+    // ✨ SANITIZAR DATOS DEL PRODUCTO
+    const sanitizedProductData = {
+      nombre: sanitizeInput(productData.nombre || ''),
+      descripcion: sanitizeInput(productData.descripcion || ''),
+      categoria: sanitizeInput(productData.categoria || ''),
+      precio: Math.max(0, Number(productData.precio) || 0),
+      stock: Math.max(0, Number(productData.stock) || 0),
+      es_sensible: Boolean(productData.es_sensible)
+    };
+
+    // Validar datos requeridos
+    if (!sanitizedProductData.nombre.trim()) {
+      alert('El nombre del producto es requerido');
+      return;
+    }
+
     try {
-      await updateProducto(id, productData);
-      // Recargar productos después de editar
+      await updateProducto(sanitizedId, sanitizedProductData);
       await loadProductos();
       setIsEditModalOpen(false);
       setEditingProduct(null);
     } catch (err) {
-      alert('Error al actualizar producto: ' + err.message);
       console.error('Error updating product:', err);
+      alert('Error al actualizar producto: ' + sanitizeInput(err.message || 'Error desconocido'));
     }
+  };
+
+
+// ✨ FUNCIÓN SEGURA PARA MANEJAR BÚSQUEDA
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    
+    // Limitar longitud de búsqueda
+    if (value.length > 100) {
+      return;
+    }
+
+    // Rate limiting para búsquedas
+    if (!checkRateLimit('product_search', 20, 10000)) {
+      return;
+    }
+
+    setSearchTerm(value);
   };
 
   const handleCloseEdit = () => {
@@ -101,6 +205,7 @@ const handleEditProduct = async () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Package className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          {/* ✨ ERROR SANITIZADO */}
           <p className="text-red-600 mb-4">{error}</p>
           <Button onClick={loadProductos}>
             Reintentar
@@ -161,7 +266,9 @@ const handleEditProduct = async () => {
           {filteredProductos.length === 0 && !loading && (
             <div className="text-center py-12">
               <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No se encontraron productos</p>
+              <p className="text-gray-600">
+                {searchTerm ? 'No se encontraron productos que coincidan con tu búsqueda' : 'No se encontraron productos'}
+              </p>
             </div>
           )}
         </div>

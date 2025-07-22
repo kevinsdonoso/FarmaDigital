@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { Plus, Minus } from 'lucide-react';
 
+import { sanitizeInput, checkRateLimit } from '@/lib/security';
+
 export default function ProductCard({ producto }) {
   const router = useRouter();
   const { cart, addToCart } = useCart();
@@ -12,51 +14,71 @@ export default function ProductCard({ producto }) {
   // Verifica si el producto ya está en el carrito
   const yaEnCarrito = cart.some(item => item.id === producto.idProducto);
 
+  // ✨ FUNCIÓN SEGURA PARA AGREGAR AL CARRITO (CORREGIDA - SOLO UNA)
   const handleAgregarCarrito = () => {
+    // Rate limiting para prevenir spam de clics
+    if (!checkRateLimit(`add_to_cart_${producto.idProducto}`, 3, 10000)) {
+      console.warn('Rate limit excedido para agregar al carrito');
+      return;
+    }
+
     addToCart({
       id: producto.idProducto,
-      nombre: producto.nombre,
-      precio: producto.precio,
-      cantidad: cantidad
+      nombre: sanitizeInput(producto.nombre),
+      precio: Number(producto.precio) || 0,
+      cantidad: Math.max(1, Math.min(cantidad, stockDisponible))
     });
   };
 
-  // Control de cantidad con botones + y -
+// ✨ CONTROL DE CANTIDAD SANITIZADO
   const incrementCantidad = () => {
-    const maxStock = producto.stock || 999; // Si no hay stock definido, permitir hasta 999
+    const maxStock = Number(producto.stock) || 999;
     if (cantidad < maxStock) {
-      setCantidad(prev => prev + 1);
+      setCantidad(prev => Math.min(prev + 1, maxStock));
     }
   };
 
   const decrementCantidad = () => {
     if (cantidad > 1) {
-      setCantidad(prev => prev - 1);
+      setCantidad(prev => Math.max(prev - 1, 1));
     }
   };
 
+
+  // ✨ VALIDACIÓN SEGURA DE INPUT DE CANTIDAD (SOLO UNA FUNCIÓN)
   const handleCantidadChange = (e) => {
-    const value = parseInt(e.target.value) || 1;
-    const maxStock = producto.stock || 999;
+    const inputValue = sanitizeInput(e.target.value);
+    const value = parseInt(inputValue) || 1;
+    const maxStock = Number(producto.stock) || 999;
     
+ // Validar rango
     if (value >= 1 && value <= maxStock) {
       setCantidad(value);
+    } else if (value > maxStock) {
+      setCantidad(maxStock);
+    } else {
+      setCantidad(1);
     }
   };
 
-  const stockDisponible = producto.stock || 0;
+    // ✨ DATOS SANITIZADOS DEL PRODUCTO
+  const stockDisponible = Math.max(0, Number(producto.stock) || 0);
   const sinStock = stockDisponible <= 0;
+  const precioSanitizado = Number(producto.precio) || 0;
+  const nombreSanitizado = sanitizeInput(producto.nombre || 'Producto sin nombre');
+  const descripcionSanitizada = sanitizeInput(producto.descripcion || '');
 
   return (
     <div className="border rounded-lg p-4 shadow-md flex flex-col justify-between bg-white hover:shadow-lg transition-shadow">
       <div>
         <h3 className="text-xl font-bold text-gray-900">{producto.nombre}</h3>
-        <p className="text-gray-600 mt-2">{producto.descripcion}</p>
-        
+        <p className="text-gray-600 mt-2">{producto.descripcion}</p> 
       </div>
 
       <div className="mt-4 space-y-3">
-        <p className="text-lg font-semibold text-blue-600">${producto.precio.toFixed(2)}</p>
+        <p className="text-lg font-semibold text-blue-600">
+          ${precioSanitizado.toFixed(2)}
+        </p>
         
         {/* Selector de cantidad con botones + y - */}
         {!sinStock && (
@@ -74,7 +96,7 @@ export default function ProductCard({ producto }) {
                 <Minus className="h-4 w-4" />
               </button>
 
-              {/* Input de cantidad */}
+              {/* ✨ INPUT DE CANTIDAD SANITIZADO */}
               <input
                 type="number"
                 min={1}
