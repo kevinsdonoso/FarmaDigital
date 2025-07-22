@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
 using FarmaDigitalBackend.Models;
-using FarmaDigitalBackend.Repositories.Interfaces;
+using FarmaDigitalBackend.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
 namespace FarmaDigitalBackend.Controllers
@@ -9,21 +9,18 @@ namespace FarmaDigitalBackend.Controllers
     [Route("api/[controller]")]
     public class LogsAuditoriaController : ControllerBase
     {
-        private readonly ILogsAuditoriaRepository _logsRepo;
+        private readonly ILogAuditoriaService _logService;
 
-        public LogsAuditoriaController(ILogsAuditoriaRepository logsRepo)
+        public LogsAuditoriaController(ILogAuditoriaService logService)
         {
-            _logsRepo = logsRepo;
+            _logService = logService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Registrar([FromBody] LogAuditoria log)
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
         {
-            if (log == null || string.IsNullOrEmpty(log.Accion))
-                return BadRequest("Log inválido.");
-
-            await _logsRepo.RegistrarAsync(log);
-            return Ok(new { success = true });
+            var logs = await _logService.GetAllAsync();
+            return Ok(new { success = true, data = logs });
         }
     }
 }

@@ -15,9 +15,11 @@ namespace FarmaDigitalBackend.Services
         private readonly ITwoFactorService _twoFactorService;
         private readonly ILogAuditoriaService _logService;
         private readonly IUserContextService _userContextService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public AuthService(IUsuarioRepository userRepository, ITwoFactorRepository twoFactorRepository,
-                          IJwtService jwtService, ITwoFactorService twoFactorService, ILogAuditoriaService logAuditoriaService, IUserContextService userContextService)
+                          IJwtService jwtService, ITwoFactorService twoFactorService, ILogAuditoriaService logAuditoriaService, IUserContextService userContextService,
+                          IHttpContextAccessor httpContextAccessor)
         {
             _userRepository = userRepository;
             _twoFactorRepository = twoFactorRepository;
@@ -25,6 +27,7 @@ namespace FarmaDigitalBackend.Services
             _twoFactorService = twoFactorService;
             _logService = logAuditoriaService;
             _userContextService = userContextService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
 public async Task<IActionResult> RegisterUser(UserRegistration registration)
@@ -47,14 +50,6 @@ public async Task<IActionResult> RegisterUser(UserRegistration registration)
 
     await _userRepository.CreateUser(user);
 
-    var ip = _userContextService.GetClientIp(); 
-    await _logService.RegistrarAsync(
-        user.IdUsuario,
-        "registro",
-        $"Registro exitoso de usuario: {user.Nombre} ({user.Correo})",
-        ip
-    );
-
     return new OkObjectResult(new { success = true });
 }
 
@@ -63,13 +58,17 @@ public async Task<IActionResult> RegisterUser(UserRegistration registration)
             var user = await _userRepository.GetUserByDniOrEmail(credentials.Username);
             if (user == null || !BCrypt.Net.BCrypt.Verify(credentials.Password, user.PasswordHash))
             {
-                var saip = _userContextService.GetClientIp();
-                await _logService.RegistrarAsync(
-                    null,
-                    "login_fallido",
-                    $"Intento fallido con usuario '{credentials.Username}'",
-                    saip
-                );
+            var ip = _userContextService.GetClientIp();
+            await _logService.RegistrarAsync(
+                idUsuario: null,
+                nombre: credentials.Username, 
+                correo: credentials.Username, 
+                rol: "desconocido",           
+                accion: "intento_login_fallido",
+                descripcion: $"Intento fallido de login con usuario '{credentials.Username}'",
+                ip: ip,
+                fecha: DateTime.UtcNow
+            );
                 return new UnauthorizedObjectResult(new { error = "Credenciales inválidas" });
             }
                 
@@ -86,28 +85,30 @@ public async Task<IActionResult> RegisterUser(UserRegistration registration)
             
             if (!isValid)
             {
-                var dosfaInvalidoip = _userContextService.GetClientIp();
+                // Registrar log manual para código 2FA inválido
+                var ip = _userContextService.GetClientIp();
                 await _logService.RegistrarAsync(
-                    user.IdUsuario,
-                    "codigo_2fa_invalido",
-                    $"Intento fallido: código 2FA inválido para {user.Correo}",
-                    dosfaInvalidoip
+                    idUsuario: user.IdUsuario,
+                    nombre: user.Nombre,
+                    correo: user.Correo,
+                    rol: "desconocido",
+                    accion: "codigo_2fa_invalido",
+                    descripcion: $"Código 2FA inválido para el usuario '{user.Correo}'",
+                    ip: ip,
+                    fecha: DateTime.UtcNow
                 );
-
+                // ...también setear para el middleware si el usuario está autenticado
+                _httpContextAccessor.HttpContext.Items["AuditAccion"] = "codigo_2fa_invalido";
+                _httpContextAccessor.HttpContext.Items["AuditDescripcion"] = $"Código 2FA inválido para el usuario '{user.Correo}'";
                 return new UnauthorizedObjectResult(new { error = "Código 2FA inválido" });
             }
 
 
             var token = _jwtService.GenerateToken(user);
 
-            var ip = _userContextService.GetClientIp(); // asegúrate de tener acceso al contexto
+            _httpContextAccessor.HttpContext.Items["AuditAccion"] = "login_exitoso";
+            _httpContextAccessor.HttpContext.Items["AuditDescripcion"] = "Login exitoso para el usuario ...";
 
-            await _logService.RegistrarAsync(
-                user.IdUsuario,
-                "login_exitoso",
-                $"Inicio de sesión exitoso para {user.Nombre}",
-                ip
-            );
             return new OkObjectResult(new
             {
                 access_token = token.AccessToken,
@@ -119,7 +120,6 @@ public async Task<IActionResult> RegisterUser(UserRegistration registration)
 
         private async Task<IActionResult> HandleFirstLogin(Usuario user, UserCredentials credentials)
         {
-            // Si no envió código, devolver QR
             if (string.IsNullOrEmpty(credentials.TwoFactorCode))
             {
                 var secretKey = await _twoFactorService.GenerateSecretKey();
@@ -147,44 +147,38 @@ public async Task<IActionResult> RegisterUser(UserRegistration registration)
                 });
             }
 
-            // Si envió código, activar 2FA y hacer login
             var twoFactor = await _twoFactorRepository.GetByUserIdAsync(user.IdUsuario);
             var isValid = await _twoFactorService.ValidateCode(twoFactor.SecretKey, credentials.TwoFactorCode);
             
             if (!isValid)
             {
-                var dosfaInvalidoip = _userContextService.GetClientIp();
+              
+                var ip = _userContextService.GetClientIp();
                 await _logService.RegistrarAsync(
-                    user.IdUsuario,
-                    "codigo_2fa_invalido",
-                    $"Intento fallido: código 2FA inválido para {user.Correo}",
-                    dosfaInvalidoip
+                    idUsuario: user.IdUsuario,
+                    nombre: user.Nombre,
+                    correo: user.Correo,
+                    rol: "desconocido",
+                    accion: "codigo_2fa_invalido",
+                    descripcion: $"Código 2FA inválido para el usuario '{user.Correo}'",
+                    ip: ip,
+                    fecha: DateTime.UtcNow
                 );
-
+                _httpContextAccessor.HttpContext.Items["AuditAccion"] = "codigo_2fa_invalido";
+                _httpContextAccessor.HttpContext.Items["AuditDescripcion"] = $"Código 2FA inválido para el usuario '{user.Correo}'";
                 return new UnauthorizedObjectResult(new { error = "Código 2FA inválido" });
             }
 
-            // Activar 2FA
+
             user.MfaActivado = true;
             await _userRepository.UpdateUser(user);
 
             twoFactor.IsActivated = true;
             await _twoFactorRepository.Update(twoFactor);
 
-            var ip = _userContextService.GetClientIp();
+            _httpContextAccessor.HttpContext.Items["AuditAccion"] = "primer_login_exitoso";
+            _httpContextAccessor.HttpContext.Items["AuditDescripcion"] = "Primer login exitoso y activación de 2FA para el usuario ...";
 
-            await _logService.RegistrarAsync(
-                user.IdUsuario,
-                "2fa_activado_despues_de_registro",
-                $"Usuario {user.Correo} activó 2FA por primera vez",
-                ip
-            );
-            await _logService.RegistrarAsync(
-                user.IdUsuario,
-                "primer_login_exitoso",
-                $"Primer inicio de sesión exitoso para {user.Nombre}",
-                ip
-            );
 
             // Generar token
             var token = _jwtService.GenerateToken(user);

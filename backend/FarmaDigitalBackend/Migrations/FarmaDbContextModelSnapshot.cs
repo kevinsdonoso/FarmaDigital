@@ -228,24 +228,42 @@ namespace FarmaDigitalBackend.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("accion");
 
-                    b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("creado_en");
+                    b.Property<string>("Correo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correo");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("descripcion");
 
-                    b.Property<string>("DireccionIp")
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha");
+
+                    b.Property<string>("IP")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("direccion_ip");
+                        .HasColumnName("ip");
 
                     b.Property<int?>("IdUsuario")
                         .HasColumnType("integer")
                         .HasColumnName("id_usuario");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("nombre");
+
+                    b.Property<string>("Rol")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("rol");
 
                     b.HasKey("IdLog");
 
