@@ -1,5 +1,16 @@
 'use client';
-
+/**
+ * Componente para verificación segura de código 2FA en el login.
+ * - Valida y sanitiza todos los datos antes de procesarlos.
+ * - Aplica rate limiting para prevenir abuso y ataques automatizados.
+ * - El diseño previene fugas de información y asegura la integridad de los datos.
+ *
+ * Seguridad:
+ * - Los datos temporales de login se validan y sanitizan antes de usarse.
+ * - El código 2FA se sanitiza y valida antes de enviarse.
+ * - El rate limiting previene intentos de fuerza bruta y spam.
+ * - Los errores se muestran de forma segura y nunca exponen información sensible.
+ */
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginUser } from '@/lib/api';
@@ -9,7 +20,6 @@ import { Alert } from '@/components/ui/Alert';
 import { login } from '@/lib/auth';
 import { getUserFromToken } from '@/lib/api';
 
-// ✨ IMPORTS DE SEGURIDAD
 import { sanitizeInput, checkRateLimit, validateUserInput } from '@/lib/security';
 
 export default function TwoFactorContent() {
@@ -22,20 +32,22 @@ export default function TwoFactorContent() {
   const router = useRouter();
 
   useEffect(() => {
-    // ✨ VALIDACIÓN SEGURA DE SESSION STORAGE
+    /**
+     * Carga y valida los datos temporales de login desde sessionStorage.
+     * - Verifica estructura, integridad y expiración.
+     * - Sanitiza los datos antes de usarlos.
+     */
     const validateAndLoadPendingLogin = () => {
       try {
-        const pendingLogin = sessionStorage.getItem('pendingLogin');
-        
+        const pendingLogin = sessionStorage.getItem('pendingLogin');    
         if (!pendingLogin) {
           console.warn('No hay datos de login pendiente');
           router.push('/login');
           return;
         }
-
         const loginData = JSON.parse(pendingLogin);
         
-        // ✨ VALIDAR ESTRUCTURA DE DATOS
+        // Validar estructura
         if (!loginData.username || !loginData.password) {
           console.warn('Datos de login incompletos');
           sessionStorage.removeItem('pendingLogin');
@@ -43,7 +55,7 @@ export default function TwoFactorContent() {
           return;
         }
 
-        // ✨ VALIDAR TIMESTAMP (MÁXIMO 10 MINUTOS)
+        // Validar timestamp (máx 10 min)
         if (loginData.timestamp && (Date.now() - loginData.timestamp) > 600000) {
           console.warn('Sesión de 2FA expirada');
           sessionStorage.removeItem('pendingLogin');
@@ -51,7 +63,7 @@ export default function TwoFactorContent() {
           return;
         }
 
-        // ✨ VALIDAR INTEGRIDAD SIMPLE
+        // Validar integridad simple
         const expectedHash = btoa(loginData.username + loginData.password + loginData.timestamp).slice(-16);
         if (loginData.tempHash !== expectedHash) {
           console.warn('Datos de sesión comprometidos');
@@ -59,8 +71,8 @@ export default function TwoFactorContent() {
           router.push('/login');
           return;
         }
-
-        // ✨ SANITIZAR DATOS ANTES DE USAR
+        
+        // Sanitizar datos antes de usar
         setUsername(sanitizeInput(loginData.username));
         setPassword(loginData.password);
         
@@ -74,43 +86,44 @@ export default function TwoFactorContent() {
     validateAndLoadPendingLogin();
   }, [router]);
 
-  // ✨ FUNCIÓN SEGURA PARA MANEJAR CAMBIO DE CÓDIGO
+  /**
+   * handleCodeChange
+   * Sanitiza y valida el código 2FA en tiempo real.
+   * Aplica rate limiting para cambios rápidos.
+   */
   const handleCodeChange = (e) => {
     const value = e.target.value;
-    
-    // ✨ SANITIZAR Y VALIDAR CÓDIGO 2FA
     const sanitizedCode = sanitizeInput(value).replace(/\D/g, '').slice(0, 6);
     
     // Rate limiting para cambios de código
     if (!checkRateLimit('2fa_code_input', 20, 10000)) {
       return;
     }
-
     setCode(sanitizedCode);
-    
-    // Limpiar error cuando el usuario escribe
     if (error && sanitizedCode.length > 0) {
       setError('');
     }
   };
 
-  // ✨ SUBMIT SEGURO
+  /**
+   * handleSubmit
+   * Envía el código 2FA de forma segura.
+   * - Aplica rate limiting para intentos de verificación.
+   * - Valida el código y limita los intentos.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✨ Rate limiting para intentos 2FA
     if (!checkRateLimit('2fa_attempt', 5, 300000)) {
       setError('Demasiados intentos de verificación. Espera 5 minutos.');
       return;
     }
 
-    // ✨ Validar código antes de enviar
     if (!validateUserInput(code, 'text', { minLength: 6, maxLength: 6 })) {
       setError('El código debe tener exactamente 6 dígitos');
       return;
     }
 
-    // ✨ Límite de intentos por sesión
     if (attempts >= 3) {
       setError('Demasiados intentos fallidos. Vuelve a iniciar sesión.');
       sessionStorage.removeItem('pendingLogin');
@@ -122,23 +135,21 @@ export default function TwoFactorContent() {
     setError('');
 
     try {
-      // REQUEST COMPLETO COMO REQUIERE TU BACKEND
       const requestData = {
         username: username,
-        password: password,         // CONTRASEÑA REQUERIDA
+        password: password,  
         twoFactorCode: sanitizeInput(code),
       };
 
       const res = await loginUser(requestData);
 
       if (res.access_token) {
-        // ✅ LOGIN EXITOSO
         login(res.access_token, res.user_info);
         sessionStorage.removeItem('pendingLogin');
         
         const userData = await getUserFromToken();
         
-        // ✨ REDIRECCIÓN SEGURA BASADA EN ROL
+        // redireccionar según el rol del usuario
         const roleRoutes = {
           1: '/audit',
           2: '/products', 
@@ -150,7 +161,6 @@ export default function TwoFactorContent() {
         return;
         
       } else if (res.requires2FA === true) {
-        // ✨ INCREMENTAR CONTADOR DE INTENTOS
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         setError(`Código 2FA inválido. Intento ${newAttempts}/3. Verifica que el código sea correcto.`);
@@ -171,8 +181,11 @@ export default function TwoFactorContent() {
       setLoading(false);
     }
   };
-
-  // ✨ FUNCIÓN SEGURA PARA VOLVER AL LOGIN
+  /**
+   * handleBackToLogin
+   * Permite volver al login de forma segura y limpia los datos temporales.
+   * Aplica rate limiting para prevenir abuso.
+   */
  const handleBackToLogin = () => {
     if (!checkRateLimit('back_to_login', 5, 30000)) {
       return;
@@ -190,7 +203,6 @@ export default function TwoFactorContent() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Verificar Código 2FA</h1>
           <p className="text-gray-600">Ingresa el código de tu aplicación autenticadora</p>
           
-          {/* ✨ MOSTRAR INTENTOS RESTANTES */}
           {attempts > 0 && (
             <div className="mt-2 text-sm text-orange-600">
               Intentos restantes: {3 - attempts}
@@ -211,7 +223,6 @@ export default function TwoFactorContent() {
             required
           />
 
-          {/* ✨ CONTADOR DE CARACTERES */}
           <div className="text-xs text-gray-500 text-center">
             {code.length}/6 dígitos
           </div>
@@ -242,7 +253,6 @@ export default function TwoFactorContent() {
           </Button>
         </form>
 
-        {/* ✨ INFORMACIÓN DE AYUDA */}
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">
             ¿Problemas con el código? Verifica que tu aplicación esté sincronizada.

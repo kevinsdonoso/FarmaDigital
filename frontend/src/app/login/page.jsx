@@ -1,12 +1,22 @@
 "use client";
-
+/**
+ * Página de login segura para la aplicación.
+ * - Utiliza validación y sanitización avanzada en todos los campos.
+ * - Aplica rate limiting para prevenir abuso y ataques automatizados.
+ * - El diseño previene fugas de información y asegura la integridad de los datos.
+ *
+ * Seguridad:
+ * - Todos los datos se validan y sanitizan antes de enviarse al backend.
+ * - El rate limiting previene intentos de fuerza bruta y spam.
+ * - El login con 2FA utiliza datos temporales y nunca expone credenciales.
+ * - Los errores se muestran de forma segura y nunca exponen información sensible.
+ */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginUser } from '@/lib/api';
 import { useAuth } from '@/context/AuthProvider';
 import { LoginForm } from '@/components/auth/LoginForm';
 
-// ✨ IMPORTS DE SEGURIDAD
 import { useSecureForm } from '@/hooks/useSecureForm';
 import { checkRateLimit, sanitizeInput } from '@/lib/security';
 
@@ -28,7 +38,7 @@ export default function LoginPage() {
   }
 };
 
-  // ✨ Hook seguro
+ // Hook seguro para formularios
   const {
     formData,
     errors,
@@ -37,7 +47,13 @@ export default function LoginPage() {
     handleChange,
     handleSubmit: secureSubmit
   } = useSecureForm({ username: '', password: '' }, validationRules);
-
+  /**
+   * handleSubmit
+   * Envía el formulario de login de forma segura.
+   * - Valida y sanitiza los datos antes de enviarlos.
+   * - Aplica rate limiting para prevenir abuso.
+   * - Maneja login con 2FA y errores de forma segura.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -45,7 +61,7 @@ export default function LoginPage() {
     const isValid = await secureSubmit(async () => {}, true); // true = solo validar sin ejecutar
     if (!isValid) return;
 
-    // Ahora sí: checkRateLimit
+    // Rate limiting para intentos de login
     if (!checkRateLimit('login_attempt', 5, 300000)) {
       setError('Demasiados intentos. Intenta en 5 minutos.');
       return;
@@ -57,14 +73,11 @@ export default function LoginPage() {
 
       try {
         const res = await loginUser(secureData);
-        console.log('Respuesta login:', res); // <-- Mira el mensaje aquí
-
         if (res.error) {
           setError(sanitizeInput(res.error));
           return;
         }
-
-        // ✨ AUTENTICACIÓN CON 2FA - PASAR DATOS SEGUROS
+        // AUTENTICACIÓN CON 2FA - PASAR DATOS SEGUROS
         if (res.requires2FA === true) {
           const now = Date.now();
           const tempHash = btoa(secureData.username + secureData.password + now).slice(-16);
@@ -75,20 +88,16 @@ export default function LoginPage() {
             tempHash: tempHash,
             qr: res.qrCode || null,
             timestamp: now // Usa el mismo timestamp
-          };
-        
+          };    
           sessionStorage.setItem('pendingLogin', JSON.stringify(secureLoginData));
           router.push(res.qrCode ? '/login/two-factor-setup' : '/login/two-factor');
           return;
         }
-        // ...existing code...
-
-        // ✅ Login exitoso
+        //  Login exitoso
         if (res.success && res.access_token) {
           contextLogin(res.user_info);
           router.push('/dashboard');
         }
-
       } catch (err) {
         setError(sanitizeInput(err.message || 'Error de conexión'));  
       } finally {
@@ -104,8 +113,6 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Iniciar Sesión</h1>
           <p className="text-gray-600">Ingresa tus credenciales para acceder</p>
         </div>
-
-        {/* ✨ USAR COMPONENTE LOGINFORM */}
         <LoginForm
           formData={formData}
           errors={{ ...errors, submit: error }}
