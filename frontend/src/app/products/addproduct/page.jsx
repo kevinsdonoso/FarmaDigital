@@ -1,4 +1,16 @@
 'use client'
+/**
+ * Página para agregar productos de forma segura.
+ * - Valida y sanitiza todos los campos antes de enviar.
+ * - Aplica rate limiting para prevenir spam y abuso.
+ * - El diseño previene fugas de información y asegura la integridad de los datos.
+ *
+ * Seguridad:
+ * - Todos los datos se validan y sanitizan antes de enviarse al backend.
+ * - El formulario previene manipulación y abuso de datos.
+ * - Los errores se muestran de forma segura y nunca exponen información sensible.
+ * - El botón de logout elimina la sesión y datos sensibles.
+ */
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Package, Save, ArrowLeft, AlertCircle } from 'lucide-react';
@@ -6,8 +18,8 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { addProducto , getUserFromToken } from '@/lib/api';
 import LogoutButton from '@/components/ui/LogoutButton';
+import { useRouteGuard } from '@/hooks/useRouteGuard';
 
-// ✨ AGREGAR IMPORTS DE SEGURIDAD
 import { sanitizeInput, checkRateLimit, validateUserInput } from '@/lib/security';
 import { useSecureForm } from '@/hooks/useSecureForm';
 
@@ -16,14 +28,10 @@ export default function AddProduct() {
   const { state: authState } = useAuth();
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
-    // ✨ USAR HOOK SEGURO PARA FORMULARIOS
-  const {
-formData,
-    setFormData,
-    errors,
-    setErrors,
-    handleChange,
-    validateField
+
+  const status = useRouteGuard({ allowedRoles: [2] }); // Solo vendedores
+  // Hook seguro para manejar el formulario
+  const {formData,errors,setErrors,handleChange
   } = useSecureForm({
     nombre: '',
     descripcion: '',
@@ -34,32 +42,30 @@ formData,
     creado_por: getUserFromToken()?.id_usuario
   });
 
-  // ✨ VALIDACIÓN SEGURA DEL FORMULARIO
+  /**
+   * validateForm
+   * Validación segura de todos los campos antes de enviar.
+   */
   const validateForm = () => {
     const newErrors = {};
     // Validar nombre
     if (!validateUserInput(formData.nombre, 'text', { minLength: 2, maxLength: 100 })) {
       newErrors.nombre = 'El nombre debe tener entre 2 y 100 caracteres';
-    } 
-
-   
+    }  
     // Validar descripción
     if (!validateUserInput(formData.descripcion, 'text', { minLength: 10, maxLength: 500 })) {
       newErrors.descripcion = 'La descripción debe tener entre 10 y 500 caracteres';
     }
-
     // Validar precio
     const precio = Number(formData.precio);
     if (!validateUserInput(precio, 'number', { min: 0.01, max: 999999 })) {
       newErrors.precio = 'El precio debe ser mayor a 0 y menor a 999,999';
     }
-
     // Validar stock
     const stock = Number(formData.stock);
     if (!validateUserInput(stock, 'number', { min: 0, max: 999999 })) {
       newErrors.stock = 'El stock debe ser mayor o igual a 0 y menor a 999,999';
     }
-
     // Validar categoría
     const categoriasValidas = [
       'Analgésicos', 'Antiinflamatorios', 'Antibióticos', 'Endocrinología',
@@ -68,27 +74,27 @@ formData,
     if (!categoriasValidas.includes(formData.categoria)) {
       newErrors.categoria = 'Selecciona una categoría válida';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✨ MANEJO SEGURO DEL SUBMIT
+  /**
+   * handleSubmit
+   * Envía el formulario de forma segura.
+   * - Valida y sanitiza los datos antes de enviar.
+   * - Aplica rate limiting para prevenir spam.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     // Rate limiting para prevenir spam de creación
     if (!checkRateLimit('add_product', 5, 300000)) {
       alert('Demasiados productos creados. Espera 5 minutos.');
       return;
     }
-
     if (!validateForm()) return;
-
     setLoading(true);
-
     try {
-      // ✨ SANITIZAR DATOS ANTES DE ENVIAR
+      // Sanitizar todos los campos antes de enviar
       const productoData = {
         nombre: sanitizeInput(formData.nombre.trim()),
         descripcion: sanitizeInput(formData.descripcion.trim()),
@@ -98,12 +104,10 @@ formData,
         es_sensible: Boolean(formData.es_sensible),
         creado_por: getUserFromToken()?.id_usuario
       };
-
       // Validación final antes de enviar
       if (!productoData.nombre || !productoData.descripcion || !productoData.categoria) {
         throw new Error('Todos los campos obligatorios deben estar completos');
       }
-
       const nuevoProducto = await addProducto(productoData);
       
       setSuccessMsg('¡Producto agregado exitosamente!');
@@ -116,11 +120,13 @@ formData,
     }
   };
 
-  // ✨ MANEJO SEGURO DE INPUTS
+  /**
+   * handleInputChange
+   * Manejo seguro de inputs y validaciones en tiempo real.
+   */
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    // Usar función segura del hook
+    const { name, value} = e.target;
+    // Validaciones adicionales en tiempo real
     handleChange(e);
 
     // Validaciones adicionales en tiempo real
@@ -149,12 +155,15 @@ formData,
         return;
       }
     }
-
     // Limpiar error cuando el usuario corrige
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
+
+  // Returns condicionales según estado y seguridad
+  if (status === "loading") return <div>Cargando...</div>;
+  if (status === "unauthorized") return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -214,7 +223,6 @@ formData,
                   {errors.nombre}
                 </p>
               )}
-              {/* ✨ CONTADOR DE CARACTERES */}
               <p className="mt-1 text-xs text-gray-500">
                 {formData.nombre.length}/100 caracteres
               </p>
@@ -243,7 +251,6 @@ formData,
                   {errors.descripcion}
                 </p>
               )}
-              {/* ✨ CONTADOR DE CARACTERES */}
               <p className="mt-1 text-xs text-gray-500">
                 {formData.descripcion.length}/500 caracteres
               </p>

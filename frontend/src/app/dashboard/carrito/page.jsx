@@ -1,27 +1,46 @@
 "use client";
+/**
+ * Página de carrito de compras del usuario.
+ * - Muestra los productos agregados al carrito y permite modificar cantidades o vaciar el carrito.
+ * - Todos los datos se sanitizan antes de mostrarse o procesarse.
+ * - El contador de carrito y los totales se muestran de forma segura.
+ * - Todas las acciones están protegidas contra abuso y manipulación.
+ *
+ * Seguridad:
+ * - Los datos de productos y cantidades se sanitizan antes de renderizarse.
+ * - El contador del carrito y el total se calculan y sanitizan para evitar inconsistencias.
+ * - Las acciones de modificar cantidad y vaciar carrito aplican rate limiting para prevenir spam.
+ * - Los errores y acciones nunca exponen información sensible.
+ * - El botón de logout elimina la sesión y datos sensibles.
+ */
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { ArrowLeft, ShoppingCart, Trash2, Plus, Minus, Package } from "lucide-react";
-
-// ✨ AGREGAR IMPORTS DE SEGURIDAD
 import { sanitizeInput, checkRateLimit } from '@/lib/security';
 import LogoutButton from '@/components/ui/LogoutButton';
-
+import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 export default function CarritoPage() {
   const router = useRouter();
   const { cart, total, removeFromCart, updateQuantity, clearCart } = useCart();
-
-  //const cartItemsCount = cart.reduce((sum, item) => sum + item.cantidad, 0);
-
-  // ✨ SANITIZAR CONTADOR DE CARRITO
+  const status = useRouteGuard({ allowedRoles: [3] }); // Solo rol 3 (cliente) puede acceder
+  /**
+   * cartItemsCount
+   * Calcula y sanitiza el número total de productos en el carrito.
+   */
   const cartItemsCount = Math.max(0, cart.reduce((sum, item) => {
     const cantidad = Number(item.cantidad) || 0;
     return sum + cantidad;
   }, 0));
 
-  // ✨ FUNCIÓN SEGURA PARA ACTUALIZAR CANTIDAD
+  /**
+   * handleUpdateQuantity
+   * Actualiza la cantidad de un producto en el carrito de forma segura.
+   * - Sanitiza el valor y limita la cantidad máxima.
+   * - Aplica rate limiting para prevenir spam.
+   * - Elimina el producto si la cantidad es cero.
+   */
   const handleUpdateQuantity = (id, newQuantity) => {
     // Validar que newQuantity sea un número positivo
     const sanitizedQuantity = Math.max(0, parseInt(newQuantity) || 0);
@@ -42,7 +61,11 @@ export default function CarritoPage() {
     }
   };
 
-  // ✨ FUNCIÓN SEGURA PARA VACIAR CARRITO
+  /**
+   * handleClearCart
+   * Vacía el carrito de forma segura.
+   * - Aplica rate limiting para prevenir spam.
+   */
   const handleClearCart = () => {
     // Rate limiting para prevenir spam
     if (!checkRateLimit('clear_cart', 3, 60000)) {
@@ -51,9 +74,14 @@ export default function CarritoPage() {
     }
     clearCart();
   };
-
-    // ✨ SANITIZAR TOTAL
+  /**
+   * sanitizedTotal
+   * Sanitiza el total del carrito antes de mostrarlo.
+   */
   const sanitizedTotal = Number(total) || 0;
+
+  if (status === "loading") return <div>Cargando...</div>;
+  if (status === "unauthorized") return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -72,7 +100,6 @@ export default function CarritoPage() {
                   Carrito de Compras
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  {/* ✨ CONTADOR SANITIZADO */}
                   {cartItemsCount} producto{cartItemsCount !== 1 ? 's' : ''} en tu carrito
                 </p>
               </div>
@@ -121,7 +148,6 @@ export default function CarritoPage() {
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">Productos en tu carrito</h2>
                   <div className="divide-y divide-gray-200">
                     {cart.map((item) => {
-                      // ✨ SANITIZAR DATOS DEL ITEM
                       const itemId = item.id || `item-${Date.now()}`;
                       const nombreSanitizado = sanitizeInput(item.nombre || 'Producto sin nombre');
                       const precioSanitizado = Number(item.precio) || 0;
@@ -132,7 +158,6 @@ export default function CarritoPage() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center flex-1">
                               <div className="ml-4">
-                                {/* ✨ NOMBRE SANITIZADO */}
                                 <h3 className="text-lg font-medium text-gray-900">{nombreSanitizado}</h3>
                                 <p className="text-sm text-gray-500">
                                   ${precioSanitizado.toFixed(2)} c/u
@@ -150,7 +175,6 @@ export default function CarritoPage() {
                                   <Minus className="h-4 w-4" />
                                 </button>
                                 <span className="px-4 py-2 text-sm font-medium border-l border-r border-gray-300">
-                                  {/* ✨ CANTIDAD SANITIZADA */}
                                   {cantidadSanitizada}
                                 </span>
                                 <button
@@ -163,7 +187,6 @@ export default function CarritoPage() {
                               {/* Subtotal */}
                               <div className="text-right min-w-[100px]">
                                 <p className="text-lg font-medium text-gray-900">
-                                  {/* ✨ SUBTOTAL SANITIZADO */}
                                   ${(precioSanitizado * cantidadSanitizada).toFixed(2)}
                                 </p>
                               </div>
@@ -191,7 +214,6 @@ export default function CarritoPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span>Productos ({cartItemsCount})</span>
-                      {/* ✨ TOTAL SANITIZADO */}
                       <span>${sanitizedTotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">

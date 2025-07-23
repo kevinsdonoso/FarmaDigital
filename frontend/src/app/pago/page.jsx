@@ -1,4 +1,17 @@
 'use client';
+/**
+ * Página de pago segura para la aplicación.
+ * - Permite seleccionar método de pago y procesar la compra con validación avanzada.
+ * - Todos los datos se sanitizan y validan antes de enviarse al backend.
+ * - El diseño previene fugas de información y asegura la integridad de los datos.
+ *
+ * Seguridad:
+ * - Los datos de tarjetas y códigos se validan y sanitizan antes de procesarse.
+ * - El código de verificación (2FA) se valida y nunca se expone en logs.
+ * - El formulario previene abuso y manipulación de datos.
+ * - Los errores se muestran de forma segura y nunca exponen información sensible.
+ * - El botón de logout elimina la sesión y datos sensibles.
+ */
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
@@ -6,6 +19,7 @@ import { getTarjetas, procesarCompra } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { sanitizeInput, validateUserInput } from "@/lib/security";
 import LogoutButton from '@/components/ui/LogoutButton';
+import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 export default function PagoPage() {
   const { cart, total, clearCart } = useCart();
@@ -24,7 +38,12 @@ export default function PagoPage() {
   const [guardarTarjeta, setGuardarTarjeta] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Protección de ruta: solo rol 3 (cliente) puede acceder
+  const status = useRouteGuard({ allowedRoles: [3] });
   
+  /**
+   * useEffect: Redirige si el carrito está vacío y carga tarjetas guardadas.
+  */
   useEffect(() => {
     if (!cart || cart.length === 0) {
       router.push('/dashboard/carrito');
@@ -32,7 +51,10 @@ export default function PagoPage() {
     }
     fetchTarjetas();
   }, [cart, router]);
-
+  /**
+   * fetchTarjetas
+   * Obtiene las tarjetas guardadas de forma segura.
+   */
   const fetchTarjetas = async () => {
     try {
       const data = await getTarjetas();
@@ -49,6 +71,10 @@ export default function PagoPage() {
     }
   };
 
+  /**
+   * Handlers seguros para inputs de tarjeta.
+   * - Sanitizan y limitan el formato de los datos.
+  */
   const handleCardNumberChange = (e) => {
     let value = e.target.value.replace(/\D/g, '');
     if (value.length > 16) value = value.substring(0, 16);
@@ -80,6 +106,11 @@ export default function PagoPage() {
     });
   };
 
+  /**
+   * validateCardInputs
+   * Valida y sanitiza todos los datos antes de procesar el pago.
+   * - Previene envío de datos corruptos o inseguros.
+   */
   const validateCardInputs = () => {
     // Validación del código 2FA
     if (!validateUserInput(codigo2FA, 'text', {
@@ -142,6 +173,12 @@ export default function PagoPage() {
     }
   };
 
+  /**
+   * handlePagar
+   * Procesa el pago de forma segura.
+   * - Valida y sanitiza todos los datos antes de enviar.
+   * - Muestra errores seguros y nunca expone información sensible.
+  */
   const handlePagar = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -199,6 +236,10 @@ export default function PagoPage() {
   if (!cart || cart.length === 0) {
     return null;
   }
+
+  // Returns condicionales según estado y seguridad
+  if (status === "loading") return <div>Cargando...</div>;
+  if (status === "unauthorized") return null;
 
   return (
     <div className="max-w-4xl mx-auto p-6">
