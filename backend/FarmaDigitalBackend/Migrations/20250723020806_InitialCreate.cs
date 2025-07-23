@@ -69,10 +69,13 @@ namespace FarmaDigitalBackend.Migrations
                     id_log = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     id_usuario = table.Column<int>(type: "integer", nullable: true),
+                    nombre = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    correo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    rol = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     accion = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     descripcion = table.Column<string>(type: "text", nullable: false),
-                    direccion_ip = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    creado_en = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    ip = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    fecha = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
