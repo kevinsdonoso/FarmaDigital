@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CoverageSession>
+  <Summary numSequencePoints="10" visitedSequencePoints="10" numBranchPoints="2" visitedBranchPoints="2" sequenceCoverage="100" branchCoverage="100" />
+  <Modules>
+    <Module hash="abc123">
+      <FullName>FakeModule.dll</FullName>
+      <ModuleName>FakeModule</ModuleName>
+      <Files>
+        <File uid="1" fullPath="FakeClass.cs" />
+      </Files>
+      <Classes>
+        <Class>
+          <FullName>FakeNamespace.FakeClass</FullName>
+          <Methods>
+            <Method visited="true" cyclomaticComplexity="1" sequenceCoverage="100" branchCoverage="100" name="FakeMethod" signature="()">
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="1" uspid="1" ordinal="0" sl="1" sc="1" el="1" ec="10" fileid="1" />
+              </SequencePoints>
+              <MethodPoint vc="1" sl="1" fileid="1" />
+            </Method>
+          </Methods>
+        </Class>
+      </Classes>
+    </Module>
+  </Modules>
+</CoverageSession>

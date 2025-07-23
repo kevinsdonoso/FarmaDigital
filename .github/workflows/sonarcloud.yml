@@ -34,7 +34,9 @@ jobs:
         run: |
           export PATH="$PATH:/home/runner/.dotnet/tools"
           cd backend
-          dotnet-sonarscanner begin /k:"kevinsdonoso_FarmaDigital" /o:"farmadigital" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          dotnet-sonarscanner begin /k:"kevinsdonoso_FarmaDigital" /o:"farmadigital" \
+          /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+          /d:sonar.cs.opencover.reportsPaths="coverage.opencover.xml"
           dotnet build FarmaDigitalBackend.sln
           dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
