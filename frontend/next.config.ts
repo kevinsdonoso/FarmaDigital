@@ -28,9 +28,8 @@ const nextConfig = {
   },
   
   // #20 Configuración de webpack para eliminar código sensible en producción
-  webpack: (config, { isServer, dev }) => {
+  webpack: (config: any, { isServer, dev }: { isServer: boolean; dev: boolean }) => {
     if (!dev && !isServer) {
-      // Eliminar console.logs en producción
       config.optimization = {
         ...config.optimization,
         minimize: true
