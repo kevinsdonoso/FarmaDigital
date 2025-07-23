@@ -1,101 +1,175 @@
 'use client'
+/**
+ * Página para agregar productos de forma segura.
+ * - Valida y sanitiza todos los campos antes de enviar.
+ * - Aplica rate limiting para prevenir spam y abuso.
+ * - El diseño previene fugas de información y asegura la integridad de los datos.
+ *
+ * Seguridad:
+ * - Todos los datos se validan y sanitizan antes de enviarse al backend.
+ * - El formulario previene manipulación y abuso de datos.
+ * - Los errores se muestran de forma segura y nunca exponen información sensible.
+ * - El botón de logout elimina la sesión y datos sensibles.
+ */
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Package, Save, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
-import { addProducto } from '@/lib/api';
+import { addProducto , getUserFromToken } from '@/lib/api';
+import LogoutButton from '@/components/ui/LogoutButton';
+import { useRouteGuard } from '@/hooks/useRouteGuard';
+
+import { sanitizeInput, checkRateLimit, validateUserInput } from '@/lib/security';
+import { useSecureForm } from '@/hooks/useSecureForm';
 
 export default function AddProduct() {
   const router = useRouter();
   const { state: authState } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const status = useRouteGuard({ allowedRoles: [2] }); // Solo vendedores
+  // Hook seguro para manejar el formulario
+  const {formData,errors,setErrors,handleChange
+  } = useSecureForm({
     nombre: '',
     descripcion: '',
     precio: '',
     stock: '',
     categoria: '',
-    es_sensible: false
+    es_sensible: false,
+    creado_por: getUserFromToken()?.id_usuario
   });
 
-  const [errors, setErrors] = useState({});
-
+  /**
+   * validateForm
+   * Validación segura de todos los campos antes de enviar.
+   */
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.nombre.trim()) {
-      newErrors.nombre = 'El nombre es requerido';
+    // Validar nombre
+    if (!validateUserInput(formData.nombre, 'text', { minLength: 2, maxLength: 100 })) {
+      newErrors.nombre = 'El nombre debe tener entre 2 y 100 caracteres';
+    }  
+    // Validar descripción
+    if (!validateUserInput(formData.descripcion, 'text', { minLength: 10, maxLength: 500 })) {
+      newErrors.descripcion = 'La descripción debe tener entre 10 y 500 caracteres';
     }
-
-    if (!formData.descripcion.trim()) {
-      newErrors.descripcion = 'La descripción es requerida';
+    // Validar precio
+    const precio = Number(formData.precio);
+    if (!validateUserInput(precio, 'number', { min: 0.01, max: 999999 })) {
+      newErrors.precio = 'El precio debe ser mayor a 0 y menor a 999,999';
     }
-
-    if (!formData.precio || parseFloat(formData.precio) <= 0) {
-      newErrors.precio = 'El precio debe ser mayor a 0';
+    // Validar stock
+    const stock = Number(formData.stock);
+    if (!validateUserInput(stock, 'number', { min: 0, max: 999999 })) {
+      newErrors.stock = 'El stock debe ser mayor o igual a 0 y menor a 999,999';
     }
-
-    if (!formData.stock || parseInt(formData.stock) < 0) {
-      newErrors.stock = 'El stock debe ser mayor o igual a 0';
+    // Validar categoría
+    const categoriasValidas = [
+      'Analgésicos', 'Antiinflamatorios', 'Antibióticos', 'Endocrinología',
+      'Cardiología', 'Vitaminas', 'Cuidado Personal', 'Primeros Auxilios'
+    ];
+    if (!categoriasValidas.includes(formData.categoria)) {
+      newErrors.categoria = 'Selecciona una categoría válida';
     }
-
-    if (!formData.categoria.trim()) {
-      newErrors.categoria = 'La categoría es requerida';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * handleSubmit
+   * Envía el formulario de forma segura.
+   * - Valida y sanitiza los datos antes de enviar.
+   * - Aplica rate limiting para prevenir spam.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    // Rate limiting para prevenir spam de creación
+    if (!checkRateLimit('add_product', 5, 300000)) {
+      alert('Demasiados productos creados. Espera 5 minutos.');
+      return;
+    }
     if (!validateForm()) return;
-
     setLoading(true);
-
     try {
+      // Sanitizar todos los campos antes de enviar
       const productoData = {
-        nombre: formData.nombre,
-        descripcion: formData.descripcion,
-        precio: formData.precio,
-        stock: formData.stock,
-        categoria: formData.categoria,
-        es_sensible: formData.es_sensible,
-        creado_por: authState.user?.id_usuario || null
+        nombre: sanitizeInput(formData.nombre.trim()),
+        descripcion: sanitizeInput(formData.descripcion.trim()),
+        precio: Math.round(Number(formData.precio) * 100) / 100, // Redondear a 2 decimales
+        stock: Math.floor(Number(formData.stock)), // Solo enteros
+        categoria: sanitizeInput(formData.categoria),
+        es_sensible: Boolean(formData.es_sensible),
+        creado_por: getUserFromToken()?.id_usuario
       };
-
+      // Validación final antes de enviar
+      if (!productoData.nombre || !productoData.descripcion || !productoData.categoria) {
+        throw new Error('Todos los campos obligatorios deben estar completos');
+      }
       const nuevoProducto = await addProducto(productoData);
       
-      console.log('Producto creado:', nuevoProducto);
-      alert('Producto agregado exitosamente!');
-      router.push('/products');
-      
-    } catch (error) {
-      console.error('Error al crear producto:', error);
-      alert('Error al crear el producto: ' + error.message);
+      setSuccessMsg('¡Producto agregado exitosamente!');
+      setTimeout(() => setSuccessMsg(''), 3000); // Oculta el mensaje después de 3s
+    router.push('/products');
+  } catch (error) {
+      alert('Error al crear el producto: ' + sanitizeInput(error.message || 'Error desconocido'));
     } finally {
       setLoading(false);
     }
   };
 
-  // ... resto del componente igual
+  /**
+   * handleInputChange
+   * Manejo seguro de inputs y validaciones en tiempo real.
+   */
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    const { name, value} = e.target;
+    // Validaciones adicionales en tiempo real
+    handleChange(e);
 
-    // Limpiar error cuando el usuario empiece a escribir
+    // Validaciones adicionales en tiempo real
+    if (name === 'nombre' && value.length > 100) {
+      setErrors(prev => ({ ...prev, nombre: 'Máximo 100 caracteres' }));
+      return;
+    }
+
+    if (name === 'descripcion' && value.length > 500) {
+      setErrors(prev => ({ ...prev, descripcion: 'Máximo 500 caracteres' }));
+      return;
+    }
+
+    if (name === 'precio') {
+      const precio = Number(value);
+      if (precio < 0 || precio > 999999) {
+        setErrors(prev => ({ ...prev, precio: 'Precio fuera de rango válido' }));
+        return;
+      }
+    }
+
+    if (name === 'stock') {
+      const stock = Number(value);
+      if (stock < 0 || stock > 999999) {
+        setErrors(prev => ({ ...prev, stock: 'Stock fuera de rango válido' }));
+        return;
+      }
+    }
+    // Limpiar error cuando el usuario corrige
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
+  // Returns condicionales según estado y seguridad
+  if (status === "loading") return <div>Cargando...</div>;
+  if (status === "unauthorized") return null;
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="flex justify-end mb-4">
+        <LogoutButton />
+      </div> 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <Button
@@ -119,7 +193,11 @@ export default function AddProduct() {
             </div>
           </div>
         </div>
-
+        {successMsg && (
+          <div className="mb-4 px-4 py-2 bg-green-100 border border-green-300 text-green-800 rounded-lg text-center font-medium shadow">
+            {successMsg}
+          </div>
+        )}
         <div className="bg-white rounded-lg shadow p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Nombre del producto */}
@@ -127,12 +205,13 @@ export default function AddProduct() {
               <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-2">
                 Nombre del producto *
               </label>
-              <input
+               <input
                 type="text"
                 id="nombre"
                 name="nombre"
                 value={formData.nombre}
-                onChange={handleInputChange}
+                onChange={handleChange}
+                maxLength={100}
                 className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${
                   errors.nombre ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -144,6 +223,9 @@ export default function AddProduct() {
                   {errors.nombre}
                 </p>
               )}
+              <p className="mt-1 text-xs text-gray-500">
+                {formData.nombre.length}/100 caracteres
+              </p>
             </div>
 
             {/* Descripción */}
@@ -157,6 +239,7 @@ export default function AddProduct() {
                 value={formData.descripcion}
                 onChange={handleInputChange}
                 rows={4}
+                maxLength={500}
                 className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${
                   errors.descripcion ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -168,9 +251,12 @@ export default function AddProduct() {
                   {errors.descripcion}
                 </p>
               )}
+              <p className="mt-1 text-xs text-gray-500">
+                {formData.descripcion.length}/500 caracteres
+              </p>
             </div>
 
-            {/* Precio y Stock */}
+           {/* Precio y Stock */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
@@ -183,7 +269,8 @@ export default function AddProduct() {
                   value={formData.precio}
                   onChange={handleInputChange}
                   step="0.01"
-                  min="0"
+                  min="0.01"
+                  max="999999"
                   className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${
                     errors.precio ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -208,6 +295,7 @@ export default function AddProduct() {
                   value={formData.stock}
                   onChange={handleInputChange}
                   min="0"
+                  max="999999"
                   className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${
                     errors.stock ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -236,7 +324,7 @@ export default function AddProduct() {
                   errors.categoria ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
-                <option value="">Selecciona una categoría</option>
+               <option value="">Selecciona una categoría</option>
                 <option value="Analgésicos">Analgésicos</option>
                 <option value="Antiinflamatorios">Antiinflamatorios</option>
                 <option value="Antibióticos">Antibióticos</option>
@@ -268,7 +356,7 @@ export default function AddProduct() {
                 Este es un producto sensible (requiere manejo especial)
               </label>
             </div>
-
+            
             {/* Botones */}
             <div className="flex justify-end space-x-4 pt-6">
               <Button

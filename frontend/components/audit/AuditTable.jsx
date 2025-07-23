@@ -2,13 +2,7 @@ import React from 'react';
 import { Dropdown } from '@/components/ui/Dropdown';
 
 export const AuditTable = ({
-  logs,
-  accionFilter,
-  rolFilter,
-  acciones,
-  roles,
-  onAccionChange,
-  onRolChange,
+  logs, accionFilter, acciones, onAccionChange
 }) => (
   <div>
     <div className="mb-4 flex flex-wrap gap-4">
@@ -17,12 +11,6 @@ export const AuditTable = ({
         options={acciones}
         value={accionFilter}
         onChange={onAccionChange}
-      />
-      <Dropdown
-        label="Filtrar por rol"
-        options={roles}
-        value={rolFilter}
-        onChange={onRolChange}
       />
     </div>
     <div className="overflow-x-auto">
@@ -39,22 +27,22 @@ export const AuditTable = ({
           </tr>
         </thead>
         <tbody>
-          {logs && logs.length === 0 ? (
+          {(!logs || logs.length === 0) ? (
             <tr>
               <td colSpan={7} className="px-3 py-4 text-center text-gray-500">
                 No hay registros para mostrar.
               </td>
             </tr>
           ) : (
-            logs.map(log => (
-              <tr key={log.id_log} className="hover:bg-blue-50 transition">
-                <td className="px-3 py-2 text-sm text-gray-800">{log.usuario.nombre}</td>
-                <td className="px-3 py-2 text-sm text-gray-800">{log.usuario.correo}</td>
-                <td className="px-3 py-2 text-sm text-purple-700 font-semibold">{log.usuario.role}</td>
+            (Array.isArray(logs) ? logs : []).map(log => (
+              <tr key={log.idLog} className="hover:bg-blue-50 transition">
+                <td className="px-3 py-2 text-sm text-gray-800">{log.nombre}</td>
+                <td className="px-3 py-2 text-sm text-gray-800">{log.correo}</td>
+                <td className="px-3 py-2 text-sm text-purple-700 font-semibold">{log.rol}</td>
                 <td className="px-3 py-2 text-sm text-blue-700 font-semibold">{log.accion}</td>
                 <td className="px-3 py-2 text-sm text-gray-700">{log.descripcion}</td>
-                <td className="px-3 py-2 text-sm text-gray-700">{log.direccion_ip}</td>
-                <td className="px-3 py-2 text-sm text-gray-600">{new Date(log.creado_en).toLocaleString()}</td>
+                <td className="px-3 py-2 text-sm text-gray-700">{log.ip}</td>
+                <td className="px-3 py-2 text-sm text-gray-600">{new Date(log.fecha).toLocaleString()}</td>
               </tr>
             ))
           )}

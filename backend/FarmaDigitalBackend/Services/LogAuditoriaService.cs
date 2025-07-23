@@ -1,6 +1,8 @@
 using FarmaDigitalBackend.Models;
 using FarmaDigitalBackend.Repositories.Interfaces;
 using FarmaDigitalBackend.Services.Interfaces;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace FarmaDigitalBackend.Services
 {
@@ -13,18 +15,25 @@ namespace FarmaDigitalBackend.Services
             _repo = repo;
         }
 
-        public async Task RegistrarAsync(int? usuarioId, string accion, string descripcion, string ip)
+        public async Task RegistrarAsync(int? idUsuario, string nombre, string correo, string rol, string accion, string descripcion, string ip, DateTime fecha)
         {
             var log = new LogAuditoria
             {
-                IdUsuario = usuarioId,
+                IdUsuario = idUsuario,
+                Nombre = nombre,
+                Correo = correo,
+                Rol = rol,
                 Accion = accion,
                 Descripcion = descripcion,
-                DireccionIp = ip,
-                CreadoEn = DateTime.UtcNow
+                IP = ip,
+                Fecha = fecha
             };
-
             await _repo.RegistrarAsync(log);
+        }
+
+        public async Task<List<LogAuditoria>> GetAllAsync()
+        {
+            return await _repo.GetAllAsync();
         }
     }
 }

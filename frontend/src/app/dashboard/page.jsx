@@ -1,12 +1,27 @@
 "use client";
+/**
+ * Página principal del dashboard de productos.
+ * - Muestra el catálogo de productos disponible para el usuario autenticado.
+ * - Incluye navegación segura, contador de carrito y manejo de errores.
+ * - Todos los datos se sanitizan antes de mostrarse.
+ *
+ * Seguridad:
+ * - Los datos de productos se sanitizan antes de renderizarse.
+ * - El contador del carrito se calcula y sanitiza para evitar inconsistencias.
+ * - El acceso está protegido por useRouteGuard, permitiendo solo roles autorizados.
+ * - Los errores se muestran de forma segura y nunca exponen información sensible.
+ * - El botón de logout elimina la sesión y datos sensibles.
+ */
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getProductos } from "@/lib/api";
 import ProductCard from "@/components/products/ProductCard";
 import Header from "@/components/ui/Header";
-import { Package, ShoppingCart, Clock, ArrowLeft } from 'lucide-react';
+import { Package, ShoppingCart, Clock} from 'lucide-react';
 import { useCart } from "@/context/CartContext";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
+import { sanitizeInput } from '@/lib/security';
+import LogoutButton from '@/components/ui/LogoutButton';
 
 export default function DashboardPage() {
   const [productos, setProductos] = useState([]);
@@ -15,29 +30,61 @@ export default function DashboardPage() {
   const router = useRouter();
   const { cart } = useCart();
 
+  // Protección de ruta: solo rol 3 (cliente) puede acceder
   const status = useRouteGuard({ allowedRoles: [3] }); 
-
-
+  /**
+   * sanitizeProductData
+   * Sanitiza todos los datos de productos antes de renderizarlos.
+   * - Evita mostrar información corrupta o peligrosa.
+   */
+  const sanitizeProductData = (productos) => {
+    if (!Array.isArray(productos)) return [];
+    
+    return productos.map(producto => ({
+      ...producto,
+      nombre: sanitizeInput(producto.nombre || ''),
+      descripcion: sanitizeInput(producto.descripcion || ''),
+      categoria: sanitizeInput(producto.categoria || ''),
+      // Mantener números como números (precio, stock, etc.)
+      precio: Number(producto.precio) || 0,
+      stock: Number(producto.stock) || 0,
+      idProducto: producto.idProducto || producto.id || producto.id_producto
+    }));
+  };
+  /**
+   * useEffect: carga los productos al montar el componente.
+   * - Maneja errores y asegura que el estado se limpie correctamente.
+   * - Sanitiza los datos recibidos antes de mostrarlos.
+   */
   useEffect(() => {
     const fetchProductos = async () => {
       try {
-        console.log('🏠 Dashboard: Cargando productos...');
         const data = await getProductos();
-        console.log('✅ Dashboard: Productos cargados:', data?.length || 0);
-        setProductos(data || []);
+        const sanitizedData = sanitizeProductData(data);
+        setProductos(sanitizedData);
       } catch (err) {
-        console.error("❌ Dashboard: Error al cargar productos:", err);
-        setError(err.message);
+        setError(sanitizeInput(err.message || 'Error desconocido'));
       } finally {
         setLoading(false);
       }
     };
-
     fetchProductos();
   }, []);
 
-  const cartItemsCount = cart.reduce((sum, item) => sum + item.cantidad, 0);
+  /**
+   * cartItemsCount
+   * Calcula y sanitiza el número total de productos en el carrito.
+   */
+  const cartItemsCount = Math.max(0, cart.reduce((sum, item) => {
+    const cantidad = Number(item.cantidad) || 0;
+    return sum + cantidad;
+  }, 0));
 
+    // Returns condicionales según estado y seguridad
+  if (status === "loading") return <div>Cargando...</div>;
+  if (status === "unauthorized") return null;
+  
+  // Estado de carga
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -49,15 +96,13 @@ export default function DashboardPage() {
         <div className="flex-1 flex items-center justify-center bg-gray-50">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
-  if (status === "loading") return <div>Cargando...</div>;
-  if (status === "unauthorized") return null;
             <p className="mt-4 text-gray-600">Cargando catálogo...</p>
           </div>
         </div>
       </div>
     );
   }
-
+// Estado de error
   if (error) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -83,11 +128,13 @@ export default function DashboardPage() {
       </div>
     );
   }
-
+  // Render principal
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="flex justify-end mb-4">
+        <LogoutButton />
+      </div>  
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
         {/* Header con navegación */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -110,7 +157,7 @@ export default function DashboardPage() {
                 Carrito
                 {cartItemsCount > 0 && (
                   <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                    {cartItemsCount}
+                    {cartItemsCount > 99 ? '99+' : cartItemsCount}
                   </span>
                 )}
               </button>

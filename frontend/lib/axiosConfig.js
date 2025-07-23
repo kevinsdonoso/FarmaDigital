@@ -1,3 +1,14 @@
+/**
+ * Configuración centralizada de Axios para la aplicación.
+ * - Agrega automáticamente el token JWT a cada request.
+ * - Cambia el Content-Type según el tipo de datos enviados.
+ * - Maneja errores de autenticación de forma segura y centralizada.
+ *
+ * Seguridad:
+ * - El token se obtiene solo de cookies seguras (nunca localStorage).
+ * - Si el token expira o es inválido, se elimina y se redirige al login.
+ * - Nunca expone datos sensibles en los headers si no hay token.
+ */
 import axios from 'axios';
 import { getCurrentToken, logout } from '@/lib/auth';
 import { BASE_URL } from '@/lib/config';
@@ -11,7 +22,11 @@ const configureApiService = () => {
   axios.defaults.headers.common['Content-Type'] = 'application/json';
   axios.defaults.headers.common['Accept'] = 'application/json';
 
-  // Interceptor para requests - agregar token automáticamente
+  /**
+   * Interceptor para requests
+   * - Agrega el token JWT en el header Authorization si existe.
+   * - Cambia el Content-Type si el cuerpo es FormData.
+   */
   axios.interceptors.request.use(
     (config) => {
       // Obtener el token actual
@@ -33,7 +48,11 @@ const configureApiService = () => {
     }
   );
 
-  // Interceptor para responses - manejar errores de autenticación
+  /**
+   * Interceptor para responses
+   * - Maneja errores de autenticación (401/403) de forma segura.
+   * - Elimina el token y redirige al login si la sesión expira o es inválida.
+   */
   axios.interceptors.response.use(
     (response) => {
       return response;

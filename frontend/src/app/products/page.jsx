@@ -1,7 +1,20 @@
 'use client'
+/**
+ * Página de gestión de productos para vendedores.
+ * - Permite listar, buscar, filtrar, editar y eliminar productos de forma segura.
+ * - Todas las operaciones sanitizan y validan los datos antes de procesarlos.
+ * - El acceso está protegido por roles y rate limiting en acciones críticas.
+ *
+ * Seguridad:
+ * - Los datos de productos se sanitizan antes de renderizarse y procesarse.
+ * - El filtrado y búsqueda aplican sanitización para evitar manipulación.
+ * - Las acciones de edición y eliminación aplican rate limiting y validación.
+ * - El acceso está protegido por useRouteGuard, permitiendo solo roles autorizados.
+ * - Los errores se muestran de forma segura y nunca exponen información sensible.
+ * - El botón de logout elimina la sesión y datos sensibles.
+ */
 import React, { useState, useEffect } from 'react';
 import { Package, Plus, Search } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { getProductos, deleteProducto, updateProducto } from '@/lib/api';
 import ProductTable from '@/components/products/ProductTable';
@@ -9,6 +22,10 @@ import ProductFilter from './ProductFilter';
 import Link from 'next/link';
 import Header from "@/components/ui/Header";
 import { useRouteGuard } from "@/hooks/useRouteGuard";
+import LogoutButton from '@/components/ui/LogoutButton';
+
+// ✨ AGREGAR IMPORTS DE SEGURIDAD
+import { sanitizeInput, checkRateLimit, validateUserInput } from '@/lib/security';
 
 export default function Products() {
   const [productos, setProductos] = useState([]);
@@ -25,63 +42,180 @@ export default function Products() {
     loadProductos();
   }, []);
 
+  /**
+   * sanitizeProductsData
+   * Sanitiza todos los datos de productos antes de renderizarlos.
+   * - Evita mostrar información corrupta o peligrosa.
+   */
+  const sanitizeProductsData = (productosData) => {
+    if (!Array.isArray(productosData)) return [];
+    
+    return productosData.map(producto => ({
+      ...producto,
+      idProducto: producto.idProducto || producto.id,
+      nombre: sanitizeInput(producto.nombre || ''),
+      descripcion: sanitizeInput(producto.descripcion || ''),
+      categoria: sanitizeInput(producto.categoria || ''),
+      precio: Math.max(0, Number(producto.precio) || 0),
+      stock: Math.max(0, Number(producto.stock) || 0),
+      es_sensible: Boolean(producto.es_sensible)
+    }));
+  };
+
+  /**
+   * loadProductos
+   * Carga y sanitiza los productos desde la API.
+   * - Maneja errores y asegura que el estado se limpie correctamente.
+   */
   const loadProductos = async () => {
     try {
       setLoading(true);
-
       setError(null);
+      
       const data = await getProductos();
-      setProductos(data);
+      
+      // ✨ SANITIZAR DATOS DE PRODUCTOS
+      const sanitizedData = sanitizeProductsData(data);
+      setProductos(sanitizedData);
+      
     } catch (err) {
-      setError('Error al cargar productos: ' + err.message);
       console.error('Error loading products:', err);
+      setError(sanitizeInput(err.message || 'Error al cargar productos'));
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Filtrado seguro con sanitización.
+   * - Sanitiza el término de búsqueda y la categoría antes de filtrar.
+   */
   const filteredProductos = productos.filter(producto => {
-    const matchesSearch = producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         producto.categoria.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === '' || producto.categoria === filterCategory;
+    const sanitizedSearchTerm = sanitizeInput(searchTerm.toLowerCase());
+    const sanitizedFilterCategory = sanitizeInput(filterCategory);
+    
+    const matchesSearch = producto.nombre.toLowerCase().includes(sanitizedSearchTerm) ||
+                         producto.categoria.toLowerCase().includes(sanitizedSearchTerm);
+    const matchesCategory = sanitizedFilterCategory === '' || producto.categoria === sanitizedFilterCategory;
     return matchesSearch && matchesCategory;
   });
 
+  /**
+   * handleDeleteProduct
+   * Elimina un producto de forma segura.
+   * - Aplica rate limiting y validación de ID.
+   * - Sanitiza el ID antes de procesar.
+   */
   const handleDeleteProduct = async (id) => {
+    if (!checkRateLimit(`delete_product_${id}`, 3, 60000)) {
+      alert('Demasiadas eliminaciones. Espera un momento.');
+      return;
+    }
+    // Validar ID
+    const sanitizedId = sanitizeInput(id);
+    if (!validateUserInput(sanitizedId, 'number')) {
+      alert('ID de producto no válido');
+      return;
+    }
+
+    if (!confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+      return;
+    }
+
     try {
-      await deleteProducto(id);
-      // ✅ CAMBIAR A idProducto para el filtro
-      setProductos(productos.filter(p => p.idProducto !== id));
+      await deleteProducto(sanitizedId);
+      setProductos(productos.filter(p => p.idProducto !== sanitizedId));
+      await loadProductos();
     } catch (err) {
-      alert('Error al eliminar producto: ' + err.message);
       console.error('Error deleting product:', err);
+      alert('Error al eliminar producto: ' + sanitizeInput(err.message || 'Error desconocido'));
     }
   };
 
-const handleEditProduct = async () => {
-  // Solo recargar productos después de editar
-  console.log('🔄 Recargando productos después de editar...');
-  await loadProductos();
-};
+  /**
+   * handleEditProduct
+   * Recarga los productos después de editar.
+   * - Aplica rate limiting para evitar abuso.
+   */
+  const handleEditProduct = async () => {
+    if (!checkRateLimit('reload_products', 10, 30000)) {
+      console.warn('Rate limit excedido para recargar productos');
+      return;
+    }
+    await loadProductos();
+  };
 
- const handleSaveEdit = async (id, productData) => {
+
+  /**
+   * handleSaveEdit
+   * Guarda la edición de un producto de forma segura.
+   * - Aplica rate limiting y validación de ID.
+   * - Sanitiza todos los datos antes de enviar.
+   */
+  const handleSaveEdit = async (id, productData) => {
+    // Rate limiting para ediciones
+    if (!checkRateLimit(`edit_product_${id}`, 5, 60000)) {
+      alert('Demasiadas ediciones. Espera un momento.');
+      return;
+    }
+    const sanitizedId = sanitizeInput(id);
+    if (!validateUserInput(sanitizedId, 'number')) {
+      alert('ID de producto no válido');
+      return;
+    }
+    const sanitizedProductData = {
+      nombre: sanitizeInput(productData.nombre || ''),
+      descripcion: sanitizeInput(productData.descripcion || ''),
+      categoria: sanitizeInput(productData.categoria || ''),
+      precio: Math.max(0, Number(productData.precio) || 0),
+      stock: Math.max(0, Number(productData.stock) || 0),
+      es_sensible: Boolean(productData.es_sensible)
+    };
+
+    // Validar datos requeridos
+    if (!sanitizedProductData.nombre.trim()) {
+      alert('El nombre del producto es requerido');
+      return;
+    }
+
     try {
-      await updateProducto(id, productData);
-      // Recargar productos después de editar
+      await updateProducto(sanitizedId, sanitizedProductData);
       await loadProductos();
       setIsEditModalOpen(false);
       setEditingProduct(null);
     } catch (err) {
-      alert('Error al actualizar producto: ' + err.message);
       console.error('Error updating product:', err);
+      alert('Error al actualizar producto: ' + sanitizeInput(err.message || 'Error desconocido'));
     }
   };
 
+
+  /**
+   * handleSearchChange
+   * Maneja el cambio en el campo de búsqueda de forma segura.
+   * - Limita la longitud y aplica rate limiting.
+   */
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    
+    // Limitar longitud de búsqueda
+    if (value.length > 100) {
+      return;
+    }
+
+    // Rate limiting para búsquedas
+    if (!checkRateLimit('product_search', 20, 10000)) {
+      return;
+    }
+
+    setSearchTerm(value);
+  };
   const handleCloseEdit = () => {
     setIsEditModalOpen(false);
     setEditingProduct(null);
   };
-  // AHORA SÍ, LOS RETURNS CONDICIONALES
+
+  // Returns condicionales según estado y seguridad
   if (status === "loading") return <div>Cargando...</div>;
   if (status === "unauthorized") return null;
 
@@ -112,6 +246,9 @@ const handleEditProduct = async () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="flex justify-end mb-4">
+        <LogoutButton />
+      </div> 
       <Header 
         title="Gestión de Productos" 
         showUserSwitcher={true} 
@@ -161,7 +298,9 @@ const handleEditProduct = async () => {
           {filteredProductos.length === 0 && !loading && (
             <div className="text-center py-12">
               <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No se encontraron productos</p>
+              <p className="text-gray-600">
+                {searchTerm ? 'No se encontraron productos que coincidan con tu búsqueda' : 'No se encontraron productos'}
+              </p>
             </div>
           )}
         </div>

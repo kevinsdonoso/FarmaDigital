@@ -1,25 +1,93 @@
 "use client";
+/**
+ * Página de carrito de compras del usuario.
+ * - Muestra los productos agregados al carrito y permite modificar cantidades o vaciar el carrito.
+ * - Todos los datos se sanitizan antes de mostrarse o procesarse.
+ * - El contador de carrito y los totales se muestran de forma segura.
+ * - Todas las acciones están protegidas contra abuso y manipulación.
+ *
+ * Seguridad:
+ * - Los datos de productos y cantidades se sanitizan antes de renderizarse.
+ * - El contador del carrito y el total se calculan y sanitizan para evitar inconsistencias.
+ * - Las acciones de modificar cantidad y vaciar carrito aplican rate limiting para prevenir spam.
+ * - Los errores y acciones nunca exponen información sensible.
+ * - El botón de logout elimina la sesión y datos sensibles.
+ */
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { ArrowLeft, ShoppingCart, Trash2, Plus, Minus, Package } from "lucide-react";
+import { sanitizeInput, checkRateLimit } from '@/lib/security';
+import LogoutButton from '@/components/ui/LogoutButton';
+import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 export default function CarritoPage() {
   const router = useRouter();
   const { cart, total, removeFromCart, updateQuantity, clearCart } = useCart();
+  const status = useRouteGuard({ allowedRoles: [3] }); // Solo rol 3 (cliente) puede acceder
+  /**
+   * cartItemsCount
+   * Calcula y sanitiza el número total de productos en el carrito.
+   */
+  const cartItemsCount = Math.max(0, cart.reduce((sum, item) => {
+    const cantidad = Number(item.cantidad) || 0;
+    return sum + cantidad;
+  }, 0));
 
-  const cartItemsCount = cart.reduce((sum, item) => sum + item.cantidad, 0);
-
+  /**
+   * handleUpdateQuantity
+   * Actualiza la cantidad de un producto en el carrito de forma segura.
+   * - Sanitiza el valor y limita la cantidad máxima.
+   * - Aplica rate limiting para prevenir spam.
+   * - Elimina el producto si la cantidad es cero.
+   */
   const handleUpdateQuantity = (id, newQuantity) => {
-    if (newQuantity <= 0) {
+    // Validar que newQuantity sea un número positivo
+    const sanitizedQuantity = Math.max(0, parseInt(newQuantity) || 0);
+    
+    // Rate limiting para prevenir spam
+    if (!checkRateLimit(`update_cart_${id}`, 10, 30000)) {
+      console.warn('Rate limit excedido para actualizar carrito');
+      return;
+    }
+
+    if (sanitizedQuantity <= 0) {
       removeFromCart(id);
     } else {
-      updateQuantity(id, newQuantity);
+      // Limitar cantidad máxima por seguridad
+      const maxQuantity = 999;
+      const finalQuantity = Math.min(sanitizedQuantity, maxQuantity);
+      updateQuantity(id, finalQuantity);
     }
   };
 
+  /**
+   * handleClearCart
+   * Vacía el carrito de forma segura.
+   * - Aplica rate limiting para prevenir spam.
+   */
+  const handleClearCart = () => {
+    // Rate limiting para prevenir spam
+    if (!checkRateLimit('clear_cart', 3, 60000)) {
+      console.warn('Rate limit excedido para vaciar carrito');
+      return;
+    }
+    clearCart();
+  };
+  /**
+   * sanitizedTotal
+   * Sanitiza el total del carrito antes de mostrarlo.
+   */
+  const sanitizedTotal = Number(total) || 0;
+
+  if (status === "loading") return <div>Cargando...</div>;
+  if (status === "unauthorized") return null;
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="flex justify-end mb-4">
+        <LogoutButton />
+      </div> 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Header con navegación - MISMO ESTILO QUE DASHBOARD */}
@@ -32,7 +100,7 @@ export default function CarritoPage() {
                   Carrito de Compras
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  {cartItemsCount} productos en tu carrito
+                  {cartItemsCount} producto{cartItemsCount !== 1 ? 's' : ''} en tu carrito
                 </p>
               </div>
             </div>
@@ -79,58 +147,65 @@ export default function CarritoPage() {
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">Productos en tu carrito</h2>
                   <div className="divide-y divide-gray-200">
-                    {cart.map((item) => (
-                      <div key={item.id} className="py-6 first:pt-0">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center flex-1">
-                            <div className="ml-4">
-                              <h3 className="text-lg font-medium text-gray-900">{item.nombre}</h3>
-                              <p className="text-sm text-gray-500">${item.precio ? item.precio.toFixed(2) : '0.00'} c/u</p>
-                            </div>
-                          </div>
+                    {cart.map((item) => {
+                      const itemId = item.id || `item-${Date.now()}`;
+                      const nombreSanitizado = sanitizeInput(item.nombre || 'Producto sin nombre');
+                      const precioSanitizado = Number(item.precio) || 0;
+                      const cantidadSanitizada = Math.max(1, Number(item.cantidad) || 1);
 
-                          <div className="flex items-center space-x-4">
-                            {/* Control de cantidad */}
-                            <div className="flex items-center border border-gray-300 rounded-md">
+                      return (
+                        <div key={itemId} className="py-6 first:pt-0">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center flex-1">
+                              <div className="ml-4">
+                                <h3 className="text-lg font-medium text-gray-900">{nombreSanitizado}</h3>
+                                <p className="text-sm text-gray-500">
+                                  ${precioSanitizado.toFixed(2)} c/u
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center space-x-4">
+                                                            {/* Control de cantidad */}
+                              <div className="flex items-center border border-gray-300 rounded-md">
+                                <button
+                                  onClick={() => handleUpdateQuantity(itemId, cantidadSanitizada - 1)}
+                                  className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors"
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </button>
+                                <span className="px-4 py-2 text-sm font-medium border-l border-r border-gray-300">
+                                  {cantidadSanitizada}
+                                </span>
+                                <button
+                                  onClick={() => handleUpdateQuantity(itemId, cantidadSanitizada + 1)}
+                                  className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              </div>
+                              {/* Subtotal */}
+                              <div className="text-right min-w-[100px]">
+                                <p className="text-lg font-medium text-gray-900">
+                                  ${(precioSanitizado * cantidadSanitizada).toFixed(2)}
+                                </p>
+                              </div>
+
+                              {/* Botón eliminar */}
                               <button
-                                onClick={() => handleUpdateQuantity(item.id, item.cantidad - 1)}
-                                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors"
+                                onClick={() => removeFromCart(itemId)}
+                                className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
                               >
-                                <Minus className="h-4 w-4" />
-                              </button>
-                              <span className="px-4 py-2 text-sm font-medium border-l border-r border-gray-300">
-                                {item.cantidad}
-                              </span>
-                              <button
-                                onClick={() => handleUpdateQuantity(item.id, item.cantidad + 1)}
-                                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-colors"
-                              >
-                                <Plus className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
-
-                            {/* Subtotal */}
-                            <div className="text-right min-w-[100px]">
-                              <p className="text-lg font-medium text-gray-900">
-                                ${item.precio && item.cantidad ? (item.precio * item.cantidad).toFixed(2) : '0.00'}
-                              </p>
-                            </div>
-
-                            {/* Botón eliminar */}
-                            <button
-                              onClick={() => removeFromCart(item.id)}
-                              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
-
               {/* Resumen del carrito */}
               <div className="lg:col-span-1">
                 <div className="bg-gray-50 rounded-lg p-6 sticky top-6">
@@ -139,7 +214,7 @@ export default function CarritoPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span>Productos ({cartItemsCount})</span>
-                      <span>${total.toFixed(2)}</span>
+                      <span>${sanitizedTotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Envío</span>
@@ -148,18 +223,19 @@ export default function CarritoPage() {
                     <div className="border-t pt-3">
                       <div className="flex justify-between text-lg font-medium">
                         <span>Total</span>
-                        <span>${total.toFixed(2)}</span>
+                        <span>${sanitizedTotal.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
-
                   <div className="mt-6 space-y-3">
-                    <button onClick={() => router.push("/pago")}
-                    className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                    <button 
+                      onClick={() => router.push("/pago")}
+                      className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
                       Proceder al checkout
                     </button>
                     <button
-                      onClick={clearCart}
+                      onClick={handleClearCart}
                       className="w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       Vaciar carrito

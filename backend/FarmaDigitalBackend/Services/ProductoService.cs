@@ -5,20 +5,15 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FarmaDigitalBackend.Services
 {
-    public class ProductoService : IProductoService
+public class ProductoService : IProductoService
     {
         private readonly IProductoRepository _productoRepository;
-        private readonly IUserContextService _userContextService;
-        private readonly ILogAuditoriaService _logService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ProductoService(IProductoRepository productoRepository,
-            IUserContextService userContextService,
-            ILogAuditoriaService logAuditoriaService
-)
+        public ProductoService(IProductoRepository productoRepository, IHttpContextAccessor httpContextAccessor)
         {
             _productoRepository = productoRepository;
-            _userContextService = userContextService;
-            _logService = logAuditoriaService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IActionResult> GetAllProducts()
@@ -58,15 +53,12 @@ namespace FarmaDigitalBackend.Services
 
             var nuevoProducto = await _productoRepository.CreateProduct(producto);
 
-            var userId = _userContextService.GetCurrentUserId();
-            var ip = _userContextService.GetClientIp();
-
-            await _logService.RegistrarAsync(
-                userId,
-                "crear_producto",
-                $"Producto creado: '{nuevoProducto.Nombre}' (Categoría: {nuevoProducto.Categoria}, ID: {nuevoProducto.IdProducto})",
-                ip
-            );
+            // Log personalizado para auditoría
+            if (_httpContextAccessor.HttpContext != null)
+            {
+                _httpContextAccessor.HttpContext.Items["AuditAccion"] = "crear_producto";
+                _httpContextAccessor.HttpContext.Items["AuditDescripcion"] = $"Producto '{nuevoProducto.Nombre}' creado correctamente.";
+            }
 
             return new CreatedAtActionResult("GetProduct", "Productos", 
                 new { id = nuevoProducto.IdProducto }, nuevoProducto);
@@ -76,22 +68,14 @@ namespace FarmaDigitalBackend.Services
         {
             var productoActualizado = await _productoRepository.UpdateProduct(id, producto);
 
-            if (productoActualizado != null)
+            // Log personalizado para auditoría
+            if (_httpContextAccessor.HttpContext != null && productoActualizado != null)
             {
-                var userId = _userContextService.GetCurrentUserId();
-                var ip = _userContextService.GetClientIp();
-
-                await _logService.RegistrarAsync(
-                    userId,
-                    "modificar_producto",
-                    $"Producto modificado: '{productoActualizado.Nombre}' (ID: {productoActualizado.IdProducto})",
-                    ip
-                );
-
-                return new OkObjectResult(productoActualizado);
+                _httpContextAccessor.HttpContext.Items["AuditAccion"] = "actualizar_producto";
+                _httpContextAccessor.HttpContext.Items["AuditDescripcion"] = $"Producto '{productoActualizado.Nombre}' actualizado correctamente.";
             }
 
-            return new NotFoundResult();
+            return productoActualizado != null ? new OkObjectResult(productoActualizado) : new NotFoundResult();
         }
 
         public async Task<IActionResult> DeleteProduct(int id)
@@ -99,17 +83,11 @@ namespace FarmaDigitalBackend.Services
             var producto = await _productoRepository.GetProductById(id);
             var eliminado = await _productoRepository.SoftDeleteProduct(id);
 
-            if (eliminado)
+            // Log personalizado para auditoría
+            if (_httpContextAccessor.HttpContext != null && eliminado)
             {
-                var userId = _userContextService.GetCurrentUserId();
-                var ip = _userContextService.GetClientIp();
-
-                await _logService.RegistrarAsync(
-                    userId,
-                    "eliminar_producto",
-                    $"Producto eliminado: '{producto?.Nombre}' (ID: {id})",
-                    ip
-                );
+                _httpContextAccessor.HttpContext.Items["AuditAccion"] = "eliminar_producto";
+                _httpContextAccessor.HttpContext.Items["AuditDescripcion"] = $"Producto con ID {id} eliminado correctamente.";
             }
 
             return eliminado ? new NoContentResult() : new NotFoundResult();

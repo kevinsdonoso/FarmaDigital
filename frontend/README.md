@@ -1,95 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FarmaDigital Frontend
 
-## Getting Started
+Este proyecto es el frontend de FarmaDigital, una plataforma segura para la compra y gestión de medicamentos en línea. Está desarrollado con [Next.js](https://nextjs.org), usando React y TailwindCSS, y se conecta a un backend .NET Core.
 
-First, run the development server:
+## Características principales
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Autenticación segura** con login, registro y 2FA.
+- **Gestión de productos** para clientes y vendedores.
+- **Carrito de compras** y proceso de pago con validación avanzada.
+- **Historial de compras** y facturación.
+- **Panel de auditoría** para roles autorizados.
+- **Protección contra ataques comunes** (XSS, SQLi, abuso de formularios) mediante sanitización y rate limiting en el frontend.
+
+## Estructura del proyecto
+
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
 /frontend/
-├── public/                            # Archivos públicos accesibles directamente
-│   └── logo.png                       # Imágenes, íconos, manifest, etc.
+├── public/                            # Archivos públicos (imágenes, íconos, manifest, etc.)
 ├── src/
 │   ├── app/                           # Rutas del frontend (páginas)
 │   │   ├── login/page.jsx             # Página de login
 │   │   ├── register/page.jsx          # Página de registro
-│   │   ├── reset-password/page.jsx    # Página para restablecer contraseña
 │   │   ├── dashboard/page.jsx         # Página principal tras login
 │   │   ├── products/page.jsx          # Vista de productos
-│   │   ├── addproduct/page.jsx        # Agregar producto (rol vendedor)
+│   │   ├── products/addproduct/page.jsx # Agregar producto (rol vendedor)
 │   │   ├── carrito/page.jsx           # Carrito de compras
-│   │   ├── historialCompras/page.jsx  # Historial de compras (rol cliente)
+│   │   ├── historial/page.jsx         # Historial de compras
 │   │   ├── audit/page.jsx             # Auditoría (rol auditor)
-│   │   ├── facturacion/page.jsx       # Facturación
-│   │   └── layout.jsx                 # Layout global (Header/Footer)
+│   │   ├── pago/page.jsx              # Proceso de pago
+│   │   └── layout.tsx                 # Layout global (Header/Footer)
 │
 │   ├── components/                    # Componentes visuales organizados por dominio
-│   │   ├── auth/
-│   │   │   ├── LoginForm.jsx
-│   │   │   ├── RegisterForm.jsx
-│   │   │   └── EditUserForm.jsx
-│   │   ├── products/
-│   │   │   ├── ProductCard.jsx
-│   │   │   └── ProductTable.jsx
-│   │   ├── audit/
-│   │   │   └── AuditTable.jsx
-│   │   └── ui/
-│   │       ├── Button.jsx
-│   │       ├── Header.jsx
-│   │       ├── Footer.jsx
-│   │       └── Modal.jsx
+│   │   ├── auth/                      # Login, registro, edición de usuario
+│   │   ├── products/                  # Tarjetas y tablas de productos
+│   │   ├── audit/                     # Tabla de auditoría
+│   │   └── ui/                        # Botones, Header, Footer, Modal, etc.
 │
-│   ├── context/                       # Proveedores de contexto global
-│   │   ├── AuthProvider.jsx
-│   │   ├── CartProvider.jsx
-│   │   └── RoleProvider.jsx
-│
+│   ├── context/                       # Proveedores de contexto global (auth, carrito, roles)
 │   ├── hooks/                         # Hooks personalizados
-│   │   ├── useAuth.js
-│   │   ├── useCart.js
-│   │   └── useRole.js
+│   ├── lib/                           # Funciones lógicas, conexión a backend, validaciones, seguridad
+│   └── styles/                        # CSS global y Tailwind
 │
-│   ├── lib/                           # Funciones lógicas, conexión a backend, validaciones
-│   │   ├── api.js                     # Funciones para llamar a tu backend .NET Core
-│   │   ├── auth.js                    # Funciones de login/logout, guardar token
-│   │   ├── security.js                # Funciones anti-XSS, CSRF, sanitización
-│   │   ├── utils.js                   # Otras utilidades: fechas, precios, helpers
-│   │   └── validations.js             # Validaciones: formularios, regex, etc.
-│
-│   └── styles/                        # (Opcional) CSS global si no usas sólo Tailwind
-│       └── globals.css
-│
-├── .eslintrc.json                     # Configuración de linting
-├── tailwind.config.js                # Configuración de Tailwind
-├── next.config.js                    # Configuración general de Next.js
-├── package.json                      # Dependencias y scripts
-└── README.md                         # Documentación del proyecto
+├── .env.local                         # Variables de entorno (API URL, etc.)
+├── package.json                       # Dependencias y scripts
+└── README.md                          # Documentación del proyecto
+```
+
+## Instalación y ejecución
+
+1. **Instala dependencias:**
+   ```bash
+   npm install
+   # o
+   yarn install
+   # o
+   pnpm install
+   ```
+
+2. **Configura variables de entorno:**
+   - Copia `.env.example` a `.env.local` y ajusta los valores según tu entorno.
+
+3. **Ejecuta el servidor de desarrollo:**
+   ```bash
+   npm run dev
+   # o
+   yarn dev
+   # o
+   pnpm dev
+   # o
+   bun dev
+   ```
+
+4. **Abre la app en tu navegador:**
+   [http://localhost:3000](http://localhost:3000)
+
+## Seguridad en el frontend
+
+- Todas las entradas del usuario se **validan y sanitizan** antes de enviarse al backend.
+- Se aplica **rate limiting** en formularios y acciones críticas para prevenir spam y ataques automatizados.
+- Los errores se muestran de forma segura y nunca exponen información sensible.
+- El diseño y los componentes previenen fugas de información y mantienen la accesibilidad.
+
+## Recursos útiles
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [TailwindCSS Documentation](https://tailwindcss.com/docs)
+- [React Documentation](https://react.dev/)
+
+## Despliegue
+
+Puedes desplegar el frontend fácilmente en [Vercel](https://vercel.com/) o cualquier plataforma compatible con Next.js.
+
+---
+
+**¿Dudas o sugerencias?**  
+Contacta al equipo de FarmaDigital o revisa la documentación del backend para

@@ -1,9 +1,25 @@
-"use client";
+'use client';
+/**
+ * Página de pago segura para la aplicación.
+ * - Permite seleccionar método de pago y procesar la compra con validación avanzada.
+ * - Todos los datos se sanitizan y validan antes de enviarse al backend.
+ * - El diseño previene fugas de información y asegura la integridad de los datos.
+ *
+ * Seguridad:
+ * - Los datos de tarjetas y códigos se validan y sanitizan antes de procesarse.
+ * - El código de verificación (2FA) se valida y nunca se expone en logs.
+ * - El formulario previene abuso y manipulación de datos.
+ * - Los errores se muestran de forma segura y nunca exponen información sensible.
+ * - El botón de logout elimina la sesión y datos sensibles.
+ */
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { getTarjetas, procesarCompra } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
+import { sanitizeInput, validateUserInput } from "@/lib/security";
+import LogoutButton from '@/components/ui/LogoutButton';
+import { useRouteGuard } from "@/hooks/useRouteGuard";
 
 export default function PagoPage() {
   const { cart, total, clearCart } = useCart();
@@ -22,7 +38,12 @@ export default function PagoPage() {
   const [guardarTarjeta, setGuardarTarjeta] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Protección de ruta: solo rol 3 (cliente) puede acceder
+  const status = useRouteGuard({ allowedRoles: [3] });
   
+  /**
+   * useEffect: Redirige si el carrito está vacío y carga tarjetas guardadas.
+  */
   useEffect(() => {
     if (!cart || cart.length === 0) {
       router.push('/dashboard/carrito');
@@ -30,7 +51,10 @@ export default function PagoPage() {
     }
     fetchTarjetas();
   }, [cart, router]);
-
+  /**
+   * fetchTarjetas
+   * Obtiene las tarjetas guardadas de forma segura.
+   */
   const fetchTarjetas = async () => {
     try {
       const data = await getTarjetas();
@@ -47,18 +71,122 @@ export default function PagoPage() {
     }
   };
 
+  /**
+   * Handlers seguros para inputs de tarjeta.
+   * - Sanitizan y limitan el formato de los datos.
+  */
+  const handleCardNumberChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 16) value = value.substring(0, 16);
+    value = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+    setNuevaTarjeta({
+      ...nuevaTarjeta,
+      numeroTarjeta: value
+    });
+  };
+
+  const handleExpirationDateChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 6) value = value.substring(0, 6);
+    if (value.length > 2) {
+      value = value.substring(0, 2) + '/' + value.substring(2);
+    }
+    setNuevaTarjeta({
+      ...nuevaTarjeta,
+      fechaExpiracion: value
+    });
+  };
+
+  const handleCVVChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 3) value = value.substring(0, 3);
+    setNuevaTarjeta({
+      ...nuevaTarjeta,
+      cvv: value
+    });
+  };
+
+  /**
+   * validateCardInputs
+   * Valida y sanitiza todos los datos antes de procesar el pago.
+   * - Previene envío de datos corruptos o inseguros.
+   */
+  const validateCardInputs = () => {
+    // Validación del código 2FA
+    if (!validateUserInput(codigo2FA, 'text', {
+      minLength: 4,
+      maxLength: 8,
+      allowEmpty: false,
+      regex: /^[0-9a-zA-Z]+$/ // Solo alfanumérico
+    })) {
+      throw new Error("Código de verificación inválido (4-8 caracteres alfanuméricos)");
+    }
+
+    if (metodoPago === "nueva_tarjeta") {
+      // Validación de número de tarjeta
+      const cardNumber = nuevaTarjeta.numeroTarjeta.replace(/\s+/g, '');
+      if (!validateUserInput(cardNumber, 'number', { 
+        minLength: 16, 
+        maxLength: 16,
+        allowEmpty: false
+      })) {
+        throw new Error("Número de tarjeta inválido (13-16 dígitos)");
+      }
+
+      // Validación de fecha de expiración (MM/AAAA)
+      const [month, year] = nuevaTarjeta.fechaExpiracion.split('/');
+      if (!month || !year || month.length !== 2 || year.length !== 4) {
+        throw new Error("Formato de fecha inválido (MM/AAAA)");
+      }
+      
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().getMonth() + 1;
+      const expMonth = parseInt(month, 10);
+      const expYear = parseInt(year, 10);
+      
+      if (expMonth < 1 || expMonth > 12) {
+        throw new Error("Mes de expiración inválido");
+      }
+      
+      if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+        throw new Error("La tarjeta ha expirado");
+      }
+
+      // Validación de CVV
+      if (!validateUserInput(nuevaTarjeta.cvv, 'number', {
+        minLength: 3,
+        maxLength: 4,
+        allowEmpty: false
+      })) {
+        throw new Error("CVV inválido (3-4 dígitos)");
+      }
+
+      // Validación del nombre del titular
+      if (!validateUserInput(nuevaTarjeta.nombreTitular, 'text', {
+        minLength: 2,
+        maxLength: 50,
+        allowEmpty: false,
+        regex: /^[a-zA-Z\s]+$/ // Solo letras y espacios
+      })) {
+        throw new Error("Nombre del titular inválido (solo letras y espacios)");
+      }
+    }
+  };
+
+  /**
+   * handlePagar
+   * Procesa el pago de forma segura.
+   * - Valida y sanitiza todos los datos antes de enviar.
+   * - Muestra errores seguros y nunca expone información sensible.
+  */
   const handlePagar = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    if (!codigo2FA) {
-      setError("El código de verificación es requerido");
-      setLoading(false);
-      return;
-    }
-
     try {
+      validateCardInputs();
+
       const productos = cart.map(item => ({
         idProducto: item.id,
         cantidad: item.cantidad
@@ -72,20 +200,20 @@ export default function PagoPage() {
         payload = {
           productos,
           metodoPago: "tarjeta_existente",
-          idTarjeta,
-          codigo2FA
+          idTarjeta: sanitizeInput(idTarjeta),
+          codigo2FA: sanitizeInput(codigo2FA)
         };
       } else {
-        if (!nuevaTarjeta.numeroTarjeta || !nuevaTarjeta.fechaExpiracion || 
-            !nuevaTarjeta.cvv || !nuevaTarjeta.nombreTitular) {
-          throw new Error("Por favor complete todos los campos de la tarjeta");
-        }
         payload = {
           productos,
           metodoPago: "nueva_tarjeta",
           nuevaTarjeta: {
-            ...nuevaTarjeta,
-            codigo2FA
+            numeroTarjeta: sanitizeInput(nuevaTarjeta.numeroTarjeta.replace(/\s+/g, '')),
+            fechaExpiracion: sanitizeInput(nuevaTarjeta.fechaExpiracion),
+            cvv: sanitizeInput(nuevaTarjeta.cvv),
+            nombreTitular: sanitizeInput(nuevaTarjeta.nombreTitular),
+            esPrincipal: nuevaTarjeta.esPrincipal,
+            codigo2FA: sanitizeInput(codigo2FA)
           },
           guardarTarjeta
         };
@@ -99,7 +227,7 @@ export default function PagoPage() {
       clearCart();
       router.push(`/facturacion/${data.idCompra}`);
     } catch (err) {
-      setError(err.message || "Error al procesar el pago");
+      setError(sanitizeInput(err.message));
     } finally {
       setLoading(false);
     }
@@ -109,9 +237,15 @@ export default function PagoPage() {
     return null;
   }
 
+  // Returns condicionales según estado y seguridad
+  if (status === "loading") return <div>Cargando...</div>;
+  if (status === "unauthorized") return null;
+
   return (
-       <div className="max-w-4xl mx-auto p-6">
-      {/* Header con botón volver y título centrado */}
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="flex justify-end mb-4">
+        <LogoutButton />
+      </div> 
       <div className="flex items-center justify-between mb-8">
         <Button 
           variant="outline"
@@ -123,7 +257,6 @@ export default function PagoPage() {
 
         <h1 className="text-3xl font-bold">Método de Pago</h1>
 
-        {/* Espacio invisible para balancear el flex */}
         <div className="w-[200px]"></div>
       </div>
       
@@ -169,11 +302,11 @@ export default function PagoPage() {
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="font-medium">{tarjeta.nombreTitular}</p>
+                          <p className="font-medium">{sanitizeInput(tarjeta.nombreTitular)}</p>
                           <p className="text-sm text-gray-600">
-                            {tarjeta.tipoTarjeta} terminada en {tarjeta.ultimosDigitos}
+                            {sanitizeInput(tarjeta.tipoTarjeta)} terminada en {sanitizeInput(tarjeta.ultimosDigitos)}
                           </p>
-                          <p className="text-sm text-gray-600">Expira: {tarjeta.fechaExpiracion}</p>
+                          <p className="text-sm text-gray-600">Expira: {sanitizeInput(tarjeta.fechaExpiracion)}</p>
                         </div>
                         {tarjeta.esPrincipal && (
                           <span className="text-sm text-blue-600">Principal</span>
@@ -192,7 +325,7 @@ export default function PagoPage() {
                   <input
                     type="text"
                     value={nuevaTarjeta.numeroTarjeta}
-                    onChange={(e) => setNuevaTarjeta({ ...nuevaTarjeta, numeroTarjeta: e.target.value })}
+                    onChange={handleCardNumberChange}
                     className="mt-1 block w-full border rounded-md px-3 py-2"
                     placeholder="4532 1234 5678 1234"
                     required
@@ -204,22 +337,23 @@ export default function PagoPage() {
                     <input
                       type="text"
                       value={nuevaTarjeta.fechaExpiracion}
-                      onChange={(e) => setNuevaTarjeta({ ...nuevaTarjeta, fechaExpiracion: e.target.value })}
+                      onChange={handleExpirationDateChange}
                       className="mt-1 block w-full border rounded-md px-3 py-2"
                       placeholder="MM/AAAA"
                       required
+                      maxLength={7}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">CVV</label>
                     <input
                       type="password"
-                      maxLength="4"
                       value={nuevaTarjeta.cvv}
-                      onChange={(e) => setNuevaTarjeta({ ...nuevaTarjeta, cvv: e.target.value })}
+                      onChange={handleCVVChange}
                       className="mt-1 block w-full border rounded-md px-3 py-2"
                       placeholder="123"
                       required
+                      maxLength={4}
                     />
                   </div>
                 </div>
@@ -228,10 +362,14 @@ export default function PagoPage() {
                   <input
                     type="text"
                     value={nuevaTarjeta.nombreTitular}
-                    onChange={(e) => setNuevaTarjeta({ ...nuevaTarjeta, nombreTitular: e.target.value })}
+                    onChange={(e) => setNuevaTarjeta({ 
+                      ...nuevaTarjeta, 
+                      nombreTitular: sanitizeInput(e.target.value) 
+                    })}
                     className="mt-1 block w-full border rounded-md px-3 py-2"
                     placeholder="Como aparece en la tarjeta"
                     required
+                    maxLength={50}
                   />
                 </div>
                 <div className="space-y-2">
@@ -265,10 +403,11 @@ export default function PagoPage() {
                 <input
                   type="text"
                   value={codigo2FA}
-                  onChange={(e) => setCodigo2FA(e.target.value)}
+                  onChange={(e) => setCodigo2FA(sanitizeInput(e.target.value))}
                   className="mt-1 block w-full border rounded-md px-3 py-2"
                   placeholder="Ingrese el código de verificación"
                   required
+                  maxLength={8}
                 />
               </div>
 

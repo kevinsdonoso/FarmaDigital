@@ -1,5 +1,15 @@
 'use client';
-import React, { useState } from 'react';
+/**
+ * Componente de tabla para mostrar el historial de compras del usuario.
+ * - Muestra información relevante de cada compra/factura.
+ * - Formatea fechas y totales para mejor legibilidad.
+ * - Incluye botón seguro para ver el detalle de cada factura.
+ * - El diseño es responsivo y accesible.
+ *
+ * Props:
+ * @param {Array} compras - Lista de compras/facturas a mostrar.
+ * @param {Function} onVerFactura - Handler para mostrar el detalle de la factura seleccionada.
+ */
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Eye } from 'lucide-react';

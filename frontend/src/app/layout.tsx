@@ -3,7 +3,6 @@ import { ReactNode } from 'react';
 import Footer from '@/components/ui/Footer';
 import { AuthProvider } from '@/context/AuthProvider';
 import { CartProvider } from '@/context/CartContext';
-// Importar configuración de axios para que se inicialice
 import '@/lib/axiosConfig';
 
 export const metadata = {
