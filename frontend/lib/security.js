@@ -1,6 +1,27 @@
+/**
+ * Módulo central de seguridad frontend.
+ * 
+ * Funcionalidades incluidas:
+ * - Sanitización de entradas con DOMPurify.
+ * - Validaciones personalizadas de entradas según tipo.
+ * - Detección de inyecciones de código y SQL.
+ * - Control de tasa de peticiones (rate limiting) en cliente.
+ * 
+ * Seguridad aplicada:
+ * - Todas las entradas del usuario son sanitizadas antes de procesarse.
+ * - Validaciones robustas contra patrones comunes de ataque (XSS, SQLi).
+ * - Protección contra ejecución de scripts maliciosos o código embebido.
+ * - Límite de frecuencia configurable para mitigar abuso de formularios.
+ */
 import DOMPurify from 'dompurify';
 
-// Sanitización de entrada de datos
+/**
+ * Sanitiza la entrada usando DOMPurify.
+ * Elimina cualquier contenido HTML o atributos potencialmente peligrosos.
+ * 
+ * @param {string|any} input - Entrada bruta del usuario
+ * @returns {string} Entrada segura
+ */
 export const sanitizeInput = (input) => {
   if (input === null || input === undefined) return '';
   if (typeof input !== 'string') return String(input);
@@ -12,10 +33,27 @@ export const sanitizeInput = (input) => {
   });
 };
 
-// Validación de entrada de usuario
+/**
+ * Valida una entrada de usuario según el tipo y reglas adicionales.
+ * Se realiza sanitización y verificación contra inyecciones.
+ * 
+ * @param {any} input - Valor a validar
+ * @param {string} type - Tipo de dato esperado ('text', 'email', 'number', etc.)
+ * @param {Object} options - Reglas adicionales (minLength, max, allowEmpty, etc.)
+ * @returns {boolean} true si es válido, false si no
+ */
 export const validateUserInput = (input, type = 'text', options = {}) => {
   if (input === null || input === undefined) return false;
   
+  // Convertir a string y sanitizar
+  const rawInput = typeof input === 'string' ? input : String(input);
+  const sanitized = sanitizeInput(rawInput);
+
+  // Validar inyecciones
+  if (!validateSQLInjection(sanitized) || !validateCodeInjection(sanitized)) {
+    return false;
+  }
+
   const {
     minLength = 0,
     maxLength = 1000,
@@ -24,107 +62,54 @@ export const validateUserInput = (input, type = 'text', options = {}) => {
     allowEmpty = false
   } = options;
 
+// Validar vacío
+  if (!allowEmpty && sanitized.trim().length === 0) return false;
+
   switch (type) {
     case 'text':
-      if (typeof input !== 'string') return false;
-      if (!allowEmpty && input.trim().length === 0) return false;
-      return input.length >= minLength && input.length <= maxLength;
-      
-    case 'number':
-      const num = Number(input);
+      return sanitized.length >= minLength && sanitized.length <= maxLength;
+
+    case 'number': {
+      const num = Number(sanitized);
       if (isNaN(num)) return false;
       return num >= min && num <= max;
-    
-    case 'email':
-      if (typeof input !== 'string') return false;
+    }
+
+    case 'email': {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return emailRegex.test(input) && input.length <= maxLength;
-      
-    case 'dni':
-      if (typeof input !== 'string') return false;
+      return emailRegex.test(sanitized) && sanitized.length <= maxLength;
+    }
+
+    case 'dni': {
       const dniRegex = /^\d{8,10}$/;
-      return dniRegex.test(input);
-      
+      return dniRegex.test(sanitized);
+    }
+
     case 'password':
-      if (typeof input !== 'string') return false;
-      return input.length >= Math.max(minLength, 8) && input.length <= maxLength;
-      
-    case 'phone':
-      if (typeof input !== 'string') return false;
+      return sanitized.length >= Math.max(minLength, 8) && sanitized.length <= maxLength;
+
+    case 'phone': {
       const phoneRegex = /^\+?[\d\s\-\(\)]{10,15}$/;
-      return phoneRegex.test(input);
+      return phoneRegex.test(sanitized);
+    }
 
-    case 'expirationDate':
-      if (typeof input !== 'string') return false;
-      const dateRegex = /^(0[1-9]|1[0-2])\/\d{4}$/; // MM/YYYY format
-      return dateRegex.test(input) && input.length === 7;
-      
+    case 'expirationDate': {
+      const dateRegex = /^(0[1-9]|1[0-2])\/\d{4}$/;
+      return dateRegex.test(sanitized) && sanitized.length === 7;
+    }
+
     default:
-      return typeof input === 'string' && input.length >= minLength && input.length <= maxLength;
+      return sanitized.length >= minLength && sanitized.length <= maxLength;
   }
 };
 
-/*/ Validación específica para tarjetas de crédito
-export const validateCreditCard = {
-  number: (number) => {
-    const cleaned = number.replace(/\s+/g, '');
-    return validateUserInput(cleaned, 'text', { minLength: 13, maxLength: 19 });
-  },
-  
-  expiration: (date) => {
-    if (!/^\d{2}\/\d{4}$/.test(date)) return false;
-    
-    const [month, year] = date.split('/');
-    const monthNum = parseInt(month, 10);
-    const yearNum = parseInt(year, 10);
-    
-    if (monthNum < 1 || monthNum > 12) return false;
-    
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth() + 1;
-    
-    if (yearNum < currentYear) return false;
-    if (yearNum === currentYear && monthNum < currentMonth) return false;
-    
-    return true;
-  },
-  
-  cvv: (cvv) => {
-    return validateUserInput(cvv, 'text', { minLength: 3, maxLength: 4 });
-  },
-  
-  name: (name) => {
-    return validateUserInput(name, 'text', { minLength: 2, maxLength: 50 }) && 
-           validateCodeInjection(name) && 
-           validateSQLInjection(name);
-  }
-};
-
-// Formateadores para UI
-export const formatCardNumber = (input) => {
-  const digits = input.replace(/\D/g, '');
-  let formatted = '';
-  
-  for (let i = 0; i < Math.min(digits.length, 16); i++) {
-    if (i > 0 && i % 4 === 0) formatted += ' ';
-    formatted += digits[i];
-  }
-  
-  return formatted;
-};
-
-export const formatExpirationDate = (input) => {
-  const digits = input.replace(/\D/g, '');
-  const month = digits.slice(0, 2);
-  const year = digits.slice(2, 6);
-  
-  if (digits.length >= 3) {
-    return `${month}/${year}`;
-  }
-  return month;
-};
-*/
-// Protección contra inyección de código
+/**
+ * Valida que la entrada no contenga código malicioso (XSS).
+ * Se buscan patrones comunes de scripts y eventos inline.
+ * 
+ * @param {string} input - Entrada ya sanitizada
+ * @returns {boolean} true si es segura, false si contiene intentos de XSS
+ */
 export const validateCodeInjection = (input) => {
   if (!input || typeof input !== 'string') return true;
   
@@ -144,7 +129,13 @@ export const validateCodeInjection = (input) => {
   return !dangerousPatterns.some(pattern => pattern.test(input));
 };
 
-// Validación de SQL Injection
+/**
+ * Valida que la entrada no contenga patrones de SQL Injection.
+ * Busca palabras clave y operadores sospechosos.
+ * 
+ * @param {string} input - Entrada ya sanitizada
+ * @returns {boolean} true si es segura, false si contiene patrones SQLi
+ */
 export const validateSQLInjection = (input) => {
   if (!input || typeof input !== 'string') return true;
   
@@ -160,7 +151,15 @@ export const validateSQLInjection = (input) => {
   return !sqlPatterns.some(pattern => pattern.test(input));
 };
 
-// Rate limiting básico (cliente)
+/**
+ * Rate limiting básico del lado del cliente.
+ * Limita la cantidad de acciones que un usuario puede realizar en un período.
+ * 
+ * @param {string} key - Identificador único del usuario o acción
+ * @param {number} maxRequests - Cantidad máxima permitida
+ * @param {number} windowMs - Ventana de tiempo en milisegundos
+ * @returns {boolean} true si puede continuar, false si supera el límite
+ */
 const rateLimitStore = new Map();
 
 export const checkRateLimit = (key, maxRequests = 5, windowMs = 60000) => {
@@ -181,54 +180,3 @@ export const checkRateLimit = (key, maxRequests = 5, windowMs = 60000) => {
   rateLimitStore.set(key, requests);
   return true;
 };
-
-
-
-
-
-/*/ ✨ NUEVA FUNCIÓN: Validación de entrada de usuario
-export const validateUserInput = (input, type = 'text', options = {}) => {
-  if (input === null || input === undefined) return false;
-  
-  const {
-    minLength = 0,
-    maxLength = 1000,
-    min = -Infinity,
-    max = Infinity,
-    allowEmpty = false
-  } = options;
-
-  switch (type) {
-    case 'text':
-      if (typeof input !== 'string') return false;
-      if (!allowEmpty && input.trim().length === 0) return false;
-      return input.length >= minLength && input.length <= maxLength;
-      
-    case 'number':
-      const num = Number(input);
-      if (isNaN(num)) return false;
-      return num >= min && num <= max;
-      case 'email':
-      if (typeof input !== 'string') return false;
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return emailRegex.test(input) && input.length <= maxLength;
-      
-    case 'dni':
-      if (typeof input !== 'string') return false;
-      const dniRegex = /^\d{8,10}$/;
-      return dniRegex.test(input);
-      
-    case 'password':
-      if (typeof input !== 'string') return false;
-      return input.length >= Math.max(minLength, 8) && input.length <= maxLength;
-      
-    case 'phone':
-      if (typeof input !== 'string') return false;
-      const phoneRegex = /^\+?[\d\s\-\(\)]{10,15}$/;
-      return phoneRegex.test(input);
-      
-    default:
-      return typeof input === 'string' && input.length >= minLength && input.length <= maxLength;
-  }
-};
-*/
