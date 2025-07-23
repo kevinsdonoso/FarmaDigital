@@ -1,24 +1,19 @@
-name: SonarCloud Analysis - Backend & Frontend
+name: SonarCloud Analysis - Backend and Frontend
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  analyze-backend:
+  backend:
     name: Analyze Backend (.NET)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/FarmaDigitalBackend
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup .NET
@@ -26,46 +21,43 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore
-        run: dotnet restore FarmaDigitalBackend.sln
-
-      - name: Build
-        run: dotnet build --no-restore FarmaDigitalBackend.sln
-
-      - name: Install SonarScanner
+      - name: Install SonarScanner for .NET
         run: dotnet tool install --global dotnet-sonarscanner
 
-      - name: Sonar Scan Backend
+      - name: Restore dependencies
+        run: dotnet restore ./backend/FarmaDigitalBackend/FarmaDigitalBackend.sln
+
+      - name: Run SonarCloud Analysis for Backend
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           export PATH="$PATH:/home/runner/.dotnet/tools"
-          dotnet-sonarscanner begin /k:"farmadigital_FarmaDigital_Backend" /o:"farmadigital" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /s:sonar-project.properties
-          dotnet build FarmaDigitalBackend.sln
+          cd backend
+          dotnet-sonarscanner begin /k:"farmadigital_FarmaDigital" /o:"farmadigital" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /s:sonar-project.properties
+          dotnet build FarmaDigitalBackend/FarmaDigitalBackend.sln
           dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
-  analyze-frontend:
+  frontend:
     name: Analyze Frontend (Next.js)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm ci
+        run: cd frontend && npm ci
 
-      - name: Sonar Scan Frontend
+      - name: Run SonarCloud Analysis for Frontend
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          npm install -g sonar-scanner
-          sonar-scanner -Dproject.settings=sonar-project.properties
+          cd frontend
+          npx sonar-scanner \
+            -Dproject.settings=sonar-project.properties \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
