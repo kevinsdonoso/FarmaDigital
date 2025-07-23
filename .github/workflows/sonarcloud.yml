@@ -1,0 +1,71 @@
+name: SonarCloud Analysis - Backend & Frontend
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+jobs:
+  analyze-backend:
+    name: Analyze Backend (.NET)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/FarmaDigitalBackend
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore FarmaDigitalBackend.sln
+
+      - name: Build
+        run: dotnet build --no-restore FarmaDigitalBackend.sln
+
+      - name: Install SonarScanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Sonar Scan Backend
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          export PATH="$PATH:/home/runner/.dotnet/tools"
+          dotnet-sonarscanner begin /k:"farmadigital_FarmaDigital_Backend" /o:"farmadigital" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /s:sonar-project.properties
+          dotnet build FarmaDigitalBackend.sln
+          dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
+  analyze-frontend:
+    name: Analyze Frontend (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sonar Scan Frontend
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          npm install -g sonar-scanner
+          sonar-scanner -Dproject.settings=sonar-project.properties
