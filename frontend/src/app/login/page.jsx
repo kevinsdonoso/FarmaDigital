@@ -73,20 +73,14 @@ export default function LoginPage() {
     
       try {
         const res = await loginUser(secureData);
-        console.log('Respuesta loginUser:', res); // <-- VER LA RESPUESTA DEL BACKEND
-        debugger; // <-- PAUSA AQUÍ PARA VER EL OBJETO res EN EL NAVEGADOR
     
         if (res.error) {
           setError(sanitizeInput(res.error));
-          console.log('Error en login:', res.error); // <-- VER ERROR
           return;
         }
     
         // AUTENTICACIÓN CON 2FA - PASAR DATOS SEGUROS
         if (res.requires2FA === true) {
-          console.log('2FA requerido, datos:', secureData, res.qrCode); // <-- VER DATOS DE 2FA
-          debugger; // <-- PAUSA AQUÍ PARA VER secureData Y res
-    
           const now = Date.now();
           const tempHash = btoa(secureData.username + secureData.password + now).slice(-16);
     
@@ -98,25 +92,18 @@ export default function LoginPage() {
             timestamp: now // Usa el mismo timestamp
           };
           sessionStorage.setItem('pendingLogin', JSON.stringify(secureLoginData));
-          console.log('Guardado en sessionStorage:', secureLoginData); // <-- VERIFICAR QUE SE GUARDA
-          debugger; // <-- PAUSA AQUÍ PARA VER sessionStorage
     
           router.push(res.qrCode ? '/login/two-factor-setup' : '/login/two-factor');
-          console.log('Redirigiendo a:', res.qrCode ? '/login/two-factor-setup' : '/login/two-factor'); // <-- VERIFICAR REDIRECCIÓN
           return;
         }
     
         //  Login exitoso
         if (res.success && res.access_token) {
-          console.log('Login exitoso, usuario:', res.user_info); // <-- VERIFICAR USUARIO Y TOKEN
-          debugger; // <-- PAUSA AQUÍ PARA VER USUARIO Y TOKEN
           contextLogin(res.user_info);
           router.push('/dashboard');
-          console.log('Redirigiendo a dashboard'); // <-- VERIFICAR REDIRECCIÓN
         }
       } catch (err) {
         setError(sanitizeInput(err.message || 'Error de conexión'));
-        console.log('Catch error:', err); // <-- VERIFICAR ERROR
       } finally {
         setLoading(false);
       }
