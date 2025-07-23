@@ -112,4 +112,12 @@ app.UseMiddleware<FarmaDigitalBackend.Middleware.AuditMiddleware>();
 /// Mapeo de controladores.
 app.MapControllers();
 
+/// Aplicar migraciones automáticamente al iniciar
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<FarmaDbContext>();
+    dbContext.Database.Migrate();
+    Console.WriteLine("Migraciones aplicadas correctamente (si había alguna pendiente).");
+}
+
 app.Run();
