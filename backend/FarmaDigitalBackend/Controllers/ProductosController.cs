@@ -18,7 +18,6 @@ namespace FarmaDigitalBackend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProducts([FromQuery] bool? stock, [FromQuery] bool? activo)
         {
-            // Cambio menor para activar análisis en SonarCloud
             // Si ambos parámetros están presentes y son true
             if (stock.HasValue && stock.Value && activo.HasValue && activo.Value)
             {
