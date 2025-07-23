@@ -3,22 +3,20 @@ using FarmaDigitalBackend.DependyInjection;
 using FarmaDigitalBackend.Data;
 using FarmaDigitalBackend.Services;
 using FarmaDigitalBackend.Services.Interfaces;
+using FarmaDigitalBackend.Repositories;
+using FarmaDigitalBackend.Repositories.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
-using FarmaDigitalBackend.Repositories;
-using FarmaDigitalBackend.Repositories.Interfaces;
 
-/// Configuración principal de la aplicación FarmaDigitalBackend.
-/// Incluye CORS, JWT, DI, DB, Swagger y controladores.
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-// Clave secreta para JWT
-
-var key = "FarmaDigital-JWT-Secret-Key-2024-Very-Long-And-Secure-Key-For-Production";
+// ✅ Clave secreta para JWT desde variable de entorno
+var key = configuration["JwtSecret"] ?? throw new Exception("JWT secret missing");
 
 /// Configuración de CORS para permitir solicitudes desde el frontend
 builder.Services.AddCors(options =>
@@ -29,12 +27,10 @@ builder.Services.AddCors(options =>
             "http://localhost:3000",
             "http://localhost:3001",
             "https://localhost:3000",
-            "https://localhost:3001", 
+            "https://localhost:3001",
             "https://farma-digital-git-main-kevin-donosos-projects.vercel.app",
-            "https://farma-digital.vercel.app" // Frontend en producción
+            "https://farma-digital.vercel.app"
         )
-
-
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
@@ -65,7 +61,6 @@ builder.Services.AddAuthentication(x =>
 builder.Services.AddSingleton<IJwtService>(provider =>
     new JwtService(key));
 
-
 /// Configuración de la base de datos PostgreSQL.
 builder.Services.AddDbContext<FarmaDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -90,23 +85,26 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-/// Configuración de Swagger solo en entorno de desarrollo.
+// ✅ Encabezados reenviados para HTTPS detrás de proxy (Railway)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+/// Swagger solo en entorno de desarrollo
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-/// Uso de CORS antes de autenticación.
+/// Middleware
 app.UseCors("AllowFrontend");
-
-// ✅ Middleware
-app.UseCors("AllowFrontend");
-app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseHttpsRedirection();
 
-// Middleware de auditoría: registra logs en cada petición
+// Middleware de auditoría
 app.UseMiddleware<FarmaDigitalBackend.Middleware.AuditMiddleware>();
 
 /// Mapeo de controladores.
