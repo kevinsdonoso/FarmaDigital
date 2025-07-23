@@ -1,17 +1,18 @@
-name: SonarCloud Analysis - Backend and Frontend
+name: SonarCloud Analysis - Backend & Frontend
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  backend:
-    name: Analyze Backend (.NET)
+  analyze-backend:
+    name: SonarCloud - Backend
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,40 +25,40 @@ jobs:
       - name: Install SonarScanner for .NET
         run: dotnet tool install --global dotnet-sonarscanner
 
-      - name: Restore dependencies
-        run: dotnet restore ./backend/FarmaDigitalBackend/FarmaDigitalBackend.sln
-
-      - name: Run SonarCloud Analysis for Backend
+      - name: Run SonarCloud scan (Backend)
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           export PATH="$PATH:/home/runner/.dotnet/tools"
           cd backend
-          dotnet-sonarscanner begin /k:"farmadigital_FarmaDigital" /o:"farmadigital" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /s:sonar-project.properties
-          dotnet build FarmaDigitalBackend/FarmaDigitalBackend.sln
+          dotnet-sonarscanner begin /k:"farmadigital_FarmaDigital_Backend" /o:"farmadigital" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /s:sonar-project.properties
+          dotnet build FarmaDigitalBackend.sln
           dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
-  frontend:
-    name: Analyze Frontend (Next.js)
+  analyze-frontend:
+    name: SonarCloud - Frontend
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install dependencies
-        run: cd frontend && npm ci
+        run: npm ci
 
-      - name: Run SonarCloud Analysis for Frontend
+      - name: Run tests (optional, para cobertura)
+        run: npm run test -- --coverage || true
+
+      - name: Run SonarCloud scan (Frontend)
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          cd frontend
-          npx sonar-scanner \
-            -Dproject.settings=sonar-project.properties \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+          npx sonar-scanner --define sonar.login="${{ secrets.SONAR_TOKEN }}"
