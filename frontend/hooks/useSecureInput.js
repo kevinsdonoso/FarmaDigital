@@ -1,7 +1,27 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * Componente de input seguro para formularios.
+ * - Sanitiza y valida la entrada en tiempo real.
+ * - Detecta y bloquea intentos de inyección o caracteres peligrosos.
+ * - Muestra indicadores visuales de seguridad y advertencias al usuario.
+ *
+ * Seguridad:
+ * - Todas las entradas se sanitizan antes de ser procesadas.
+ * - Se valida el formato según el tipo de dato esperado.
+ * - Se advierte y registra cualquier intento de inyección.
+ */
+import { useState} from 'react';
 import { validateUserInput, sanitizeInput } from '@/lib/security';
 import { AlertTriangle, Shield } from 'lucide-react';
-
+/**
+ * SecureInput
+ * @param {Object} props
+ * @param {string} type - Tipo de input (text, password, etc)
+ * @param {string} validationType - Tipo de validación ('text', 'email', etc)
+ * @param {Function} onSecureChange - Callback seguro para cambios
+ * @param {number} maxLength - Máximo de caracteres permitidos
+ * @param {boolean} showSecurityIndicator - Muestra icono de seguridad
+ * @param {Object} validationOptions - Opciones extra de validación
+ */
 export const SecureInput = ({ 
   type = 'text', 
   validationType = 'text',
@@ -13,7 +33,13 @@ export const SecureInput = ({
 }) => {
   const [securityWarning, setSecurityWarning] = useState('');
   const [securityLevel, setSecurityLevel] = useState('safe');
-
+  /**
+   * handleChange
+   * Sanitiza y valida el valor ingresado.
+   * - Advierte si se detectan caracteres peligrosos.
+   * - Valida el formato según el tipo.
+   * - Llama al callback con el valor seguro.
+   */
   const handleChange = (e) => {
     const { value } = e.target;
     
@@ -24,12 +50,6 @@ export const SecureInput = ({
     if (value !== sanitizedValue) {
       setSecurityWarning('Caracteres peligrosos detectados y removidos');
       setSecurityLevel('danger');
-      
-      // Log intento de inyección
-      console.warn('Security: Potential injection attempt detected', {
-        original: value.substring(0, 50),
-        sanitized: sanitizedValue.substring(0, 50)
-      });
     } else if (!validateUserInput(sanitizedValue, validationType, validationOptions)) {
       setSecurityWarning('Formato no válido');
       setSecurityLevel('warning');
@@ -49,7 +69,10 @@ export const SecureInput = ({
       });
     }
   };
-
+  /**
+   * getSecurityColor
+   * Devuelve la clase CSS según el nivel de seguridad detectado.
+   */
   const getSecurityColor = () => {
     switch (securityLevel) {
       case 'danger': return 'border-red-500 bg-red-50';

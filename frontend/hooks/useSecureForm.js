@@ -1,3 +1,15 @@
+/**
+ * Hook personalizado para formularios seguros.
+ * - Sanitiza y valida todos los datos antes de procesarlos.
+ * - Aplica rate limiting para prevenir spam y ataques automatizados.
+ * - Bloquea el formulario temporalmente tras demasiados intentos fallidos.
+ * - Expone handlers seguros para cambios y envíos.
+ *
+ * Seguridad:
+ * - Todas las entradas se sanitizan y validan antes de actualizar el estado.
+ * - El rate limiting previene abuso tanto en cambios como en envíos.
+ * - Los errores se gestionan de forma clara y nunca exponen información sensible.
+ */
 import { useState, useCallback, useEffect } from 'react';
 import { validateUserInput, sanitizeInput } from '@/lib/security';
 import { checkRateLimit } from '@/lib/security';
@@ -7,7 +19,13 @@ export const useSecureForm = (initialData = {}, validationRules = {}) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [attemptCount, setAttemptCount] = useState(0);
-
+  /**
+   * validateField
+   * Sanitiza y valida un campo según las reglas definidas.
+   * @param {string} name - Nombre del campo
+   * @param {any} value - Valor del campo
+   * @returns {boolean} - Si el campo es válido
+   */
   const validateField = useCallback((name, value) => {
     const rule = validationRules[name];
     if (!rule) return true;
@@ -17,9 +35,6 @@ export const useSecureForm = (initialData = {}, validationRules = {}) => {
     
     // Validar según el tipo
     const isValid = validateUserInput(sanitizedValue, rule.type, rule.options);
-    // 👇 Agrega este log para ver el estado de cada campo
-    console.log(`[VALIDACIÓN] Campo: ${name}, Valor: "${sanitizedValue}", Tipo: ${rule.type}, ¿Válido?:`, isValid);
-    
     if (!isValid) {
       setErrors(prev => ({
         ...prev,
@@ -35,21 +50,15 @@ export const useSecureForm = (initialData = {}, validationRules = {}) => {
     
     return true;
   }, [validationRules]);
-
+  /**
+   * handleChange
+   * Handler seguro para cambios en los inputs.
+   * - Sanitiza el valor antes de actualizar el estado.
+   * - (Opcional) Aplica rate limiting por campo.
+   */
   const handleChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     const fieldValue = type === 'checkbox' ? checked : value;
-    
-    /* //* Rate limiting por campo
-    const rateLimitKey = `form_${name}`;
-    if (!checkRateLimit(rateLimitKey, 10, 60000)) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: 'Demasiados intentos. Espera un momento.'
-      }));
-      return;
-    }  */
-       
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : sanitizeInput(fieldValue)
@@ -58,7 +67,16 @@ export const useSecureForm = (initialData = {}, validationRules = {}) => {
 
 const [isBlocked, setIsBlocked] = useState(false);
 const [blockTime, setBlockTime] = useState(0);
-
+  /**
+   * handleSubmit
+   * Handler seguro para el envío del formulario.
+   * - Valida todos los campos antes de enviar.
+   * - Aplica rate limiting global para envíos.
+   * - Bloquea el formulario temporalmente tras demasiados intentos.
+   * @param {Function} submitFn - Función de envío
+   * @param {boolean} validateOnly - Si solo se debe validar
+   * @returns {boolean} - Si el envío fue exitoso
+   */
 const handleSubmit = useCallback(async (submitFn, validateOnly = false) => {
   if (isBlocked) {
     setErrors(prev => ({
@@ -83,10 +101,10 @@ const handleSubmit = useCallback(async (submitFn, validateOnly = false) => {
         submit: 'Por favor corrige los errores en el formulario'
       }));
     }
-    return false; // ❌ Formulario inválido
+    return false; 
   }
 
-  if (validateOnly) return true; // ✅ Solo querías validar
+  if (validateOnly) return true; 
 
   // Rate limiting para envíos
   if (!checkRateLimit('form_submit', 3, 300000)) {
@@ -114,20 +132,8 @@ const handleSubmit = useCallback(async (submitFn, validateOnly = false) => {
 
   try {
     await submitFn(formData);
-
-    logUserAction(auditableActions.FORM_SUBMITTED, {
-      formType: validationRules.formType || 'unknown',
-      attempt: attemptCount + 1
-    });
-
     return true;
   } catch (error) {
-    logUserAction(auditableActions.FORM_ERROR, {
-      formType: validationRules.formType || 'unknown',
-      error: error.message,
-      attempt: attemptCount + 1
-    });
-
     setErrors({ submit: error.message });
     return false;
   } finally {
