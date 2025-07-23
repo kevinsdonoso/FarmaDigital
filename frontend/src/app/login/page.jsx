@@ -70,36 +70,40 @@ export default function LoginPage() {
     await secureSubmit(async (secureData) => {
       setLoading(true);
       setError('');
-
+    
       try {
         const res = await loginUser(secureData);
+    
         if (res.error) {
           setError(sanitizeInput(res.error));
           return;
         }
+    
         // AUTENTICACIÓN CON 2FA - PASAR DATOS SEGUROS
         if (res.requires2FA === true) {
           const now = Date.now();
           const tempHash = btoa(secureData.username + secureData.password + now).slice(-16);
-        
+    
           const secureLoginData = {
             username: sanitizeInput(secureData.username),
             password: sanitizeInput(secureData.password),
             tempHash: tempHash,
             qr: res.qrCode || null,
             timestamp: now // Usa el mismo timestamp
-          };    
+          };
           sessionStorage.setItem('pendingLogin', JSON.stringify(secureLoginData));
+    
           router.push(res.qrCode ? '/login/two-factor-setup' : '/login/two-factor');
           return;
         }
+    
         //  Login exitoso
         if (res.success && res.access_token) {
           contextLogin(res.user_info);
           router.push('/dashboard');
         }
       } catch (err) {
-        setError(sanitizeInput(err.message || 'Error de conexión'));  
+        setError(sanitizeInput(err.message || 'Error de conexión'));
       } finally {
         setLoading(false);
       }
