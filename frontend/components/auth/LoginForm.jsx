@@ -1,19 +1,28 @@
 'use client';
 
+/**
+ * Componente de formulario de login con seguridad mejorada.
+ * - Incluye rate limiting en los inputs para prevenir spam.
+ * - Muestra alertas de error y feedback al usuario.
+ */
+
 import React from 'react';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { FileText, Lock } from 'lucide-react';
-
-// ✨ AGREGAR SEGURIDAD
+// Seguridad: Importa función para limitar la frecuencia de cambios en los inputs
 import { checkRateLimit } from '@/lib/security';
 
 export function LoginForm({ formData, errors, onChange, onSubmit, loading }) {
-  // ✨ FUNCIÓN SEGURA PARA MANEJAR CAMBIOS
+  /**
+   * handleSecureChange
+   * Limita la frecuencia de cambios en los inputs usando rate limiting.
+   * Previene ataques de spam y mejora la seguridad del formulario.
+   */
   const handleSecureChange = (e) => {
-    // Rate limiting para prevenir spam de input
+    // Permite máximo 50 cambios cada 10 segundos por input
     if (!checkRateLimit('login_input', 50, 10000)) {
       return;
     }
@@ -22,8 +31,7 @@ export function LoginForm({ formData, errors, onChange, onSubmit, loading }) {
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      
+    <form onSubmit={onSubmit} className="space-y-6">   
       {/* DNI/Username */}
       <div>
         <Input

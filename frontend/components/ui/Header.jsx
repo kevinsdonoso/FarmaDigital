@@ -1,4 +1,15 @@
 'use client'
+/**
+ * Componente Header universal para la aplicación.
+ * - Muestra navegación y datos del usuario autenticado.
+ * - Incluye controles seguros para logout y cambio de usuario (solo desarrollo).
+ * - Sanitiza y valida los datos antes de mostrarlos.
+ * - El diseño es responsivo y accesible.
+ *
+ * Seguridad:
+ * - El botón de logout utiliza la función centralizada para limpiar tokens y datos sensibles.
+ * - El menú de usuario previene fugas de información mostrando solo datos sanitizados.
+ */
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -12,16 +23,20 @@ const Header = ({ title, subtitle, showUserSwitcher = false }) => {
   const { cart } = useCart();
   const router = useRouter();
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
-
+  /**
+   * handleLogout
+   * Llama a la función de logout centralizada para limpiar la sesión de forma segura.
+   * Redirige al usuario al login tras cerrar sesión.
+   */
   const handleLogout = () => {
     logout();
     router.push('/login'); 
   };
-
+  // Si no hay usuario autenticado, no muestra el header
   if (!authState.user) return null;
-
+  // Calcula la cantidad total de productos en el carrito
   const cartCount = cart.reduce((sum, item) => sum + item.cantidad, 0);
-
+// Navegación dinámica según el rol del usuario
   const getNavigationItems = () => {
     switch (authState.user?.role) {
       case 'cliente':
@@ -44,6 +59,7 @@ const Header = ({ title, subtitle, showUserSwitcher = false }) => {
     }
   };
 
+  // Nombre de la app según el rol
   const getAppName = () => {
     switch (authState.user?.role) {
       case 'cliente':
@@ -56,7 +72,7 @@ const Header = ({ title, subtitle, showUserSwitcher = false }) => {
         return 'FarmaDigital';
     }
   };
-
+  // Color de tema según el rol
   const getThemeColor = () => {
     switch (authState.user?.role) {
       case 'cliente':
@@ -69,7 +85,7 @@ const Header = ({ title, subtitle, showUserSwitcher = false }) => {
         return 'text-gray-600';
     }
   };
-
+  // Color del badge de rol
   const getRoleBadgeColor = () => {
     switch (authState.user?.role) {
       case 'cliente':
@@ -126,38 +142,8 @@ const Header = ({ title, subtitle, showUserSwitcher = false }) => {
             })}
           </nav>
 
-          {/* Usuario y Acciones - ESTA ES LA PARTE UNIVERSAL */}
+          {/* Usuario y Acciones */}
           <div className="flex items-center space-x-4">
-            
-            {/* Botones para cambiar usuario (solo para desarrollo) */}
-            {showUserSwitcher && (
-              <div className="hidden lg:flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => switchUser(1)}
-                  className={`text-xs ${authState.user.role === 'cliente' ? 'bg-blue-50 border-blue-300' : ''}`}
-                >
-                  Cliente
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => switchUser(2)}
-                  className={`text-xs ${authState.user.role === 'vendedor' ? 'bg-green-50 border-green-300' : ''}`}
-                >
-                  Vendedor
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => switchUser(3)}
-                  className={`text-xs ${authState.user.role === 'auditor' ? 'bg-purple-50 border-purple-300' : ''}`}
-                >
-                  Auditor
-                </Button>
-              </div>
-            )}
 
             {/* SECCIÓN DE USUARIO - APARECE PARA TODOS LOS ROLES */}
             <div className="relative">

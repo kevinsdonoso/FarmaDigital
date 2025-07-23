@@ -1,9 +1,20 @@
 "use client";
+/**
+ * Componente para mostrar la tarjeta de un producto.
+ * - Incluye controles seguros para cantidad y agregar al carrito.
+ * - Sanitiza todos los datos antes de mostrarlos o procesarlos.
+ * - Aplica rate limiting para prevenir spam de clics y ataques automatizados.
+ * - El diseño es responsivo y accesible.
+ *
+ * Props:
+ * @param {Object} producto - Datos del producto a mostrar.
+ */
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { Plus, Minus } from 'lucide-react';
-
+// Seguridad: Importa función para sanitizar datos
 import { sanitizeInput, checkRateLimit } from '@/lib/security';
 
 export default function ProductCard({ producto }) {
@@ -14,9 +25,13 @@ export default function ProductCard({ producto }) {
   // Verifica si el producto ya está en el carrito
   const yaEnCarrito = cart.some(item => item.id === producto.idProducto);
 
-  // ✨ FUNCIÓN SEGURA PARA AGREGAR AL CARRITO (CORREGIDA - SOLO UNA)
+  /**
+   * handleAgregarCarrito
+   * Agrega el producto al carrito de forma segura.
+   * - Aplica rate limiting para evitar spam de clics.
+   * - Sanitiza los datos antes de agregarlos.
+   */
   const handleAgregarCarrito = () => {
-    // Rate limiting para prevenir spam de clics
     if (!checkRateLimit(`add_to_cart_${producto.idProducto}`, 3, 10000)) {
       console.warn('Rate limit excedido para agregar al carrito');
       return;
@@ -30,28 +45,35 @@ export default function ProductCard({ producto }) {
     });
   };
 
-// ✨ CONTROL DE CANTIDAD SANITIZADO
+  /**
+   * incrementCantidad / decrementCantidad
+   * Controlan el cambio de cantidad de forma segura, respetando el stock.
+   */
   const incrementCantidad = () => {
     const maxStock = Number(producto.stock) || 999;
     if (cantidad < maxStock) {
       setCantidad(prev => Math.min(prev + 1, maxStock));
     }
   };
-
+  /**
+   * handleCantidadChange
+   * Sanitiza y valida el input de cantidad para evitar valores inválidos.
+   */
   const decrementCantidad = () => {
     if (cantidad > 1) {
       setCantidad(prev => Math.max(prev - 1, 1));
     }
   };
 
-
-  // ✨ VALIDACIÓN SEGURA DE INPUT DE CANTIDAD (SOLO UNA FUNCIÓN)
+  /**
+   * handleCantidadChange
+   * Sanitiza y valida el input de cantidad para evitar valores inválidos.
+   */
   const handleCantidadChange = (e) => {
     const inputValue = sanitizeInput(e.target.value);
     const value = parseInt(inputValue) || 1;
     const maxStock = Number(producto.stock) || 999;
-    
- // Validar rango
+    // Validar rango
     if (value >= 1 && value <= maxStock) {
       setCantidad(value);
     } else if (value > maxStock) {
@@ -61,7 +83,7 @@ export default function ProductCard({ producto }) {
     }
   };
 
-    // ✨ DATOS SANITIZADOS DEL PRODUCTO
+// Datos sanitizados del producto
   const stockDisponible = Math.max(0, Number(producto.stock) || 0);
   const sinStock = stockDisponible <= 0;
   const precioSanitizado = Number(producto.precio) || 0;
@@ -95,8 +117,7 @@ export default function ProductCard({ producto }) {
               >
                 <Minus className="h-4 w-4" />
               </button>
-
-              {/* ✨ INPUT DE CANTIDAD SANITIZADO */}
+              {/*handle cantidad para sanitizar*/}
               <input
                 type="number"
                 min={1}

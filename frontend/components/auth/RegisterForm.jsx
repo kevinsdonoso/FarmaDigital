@@ -1,23 +1,31 @@
 'use client';
 
+/**
+ * Componente de formulario de registro con seguridad mejorada.
+ * - Aplica rate limiting en los inputs para prevenir spam y ataques de fuerza bruta.
+ * - Muestra indicadores de fortaleza de contraseña y alertas de validación.
+ */
+
 import React from 'react';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { User, Mail, FileText, Lock, CheckCircle } from 'lucide-react';
-
-// ✨ AGREGAR SEGURIDAD
-import { sanitizeInput, checkRateLimit } from '@/lib/security';
+// Seguridad: Importa función para limitar la frecuencia de cambios en los inputs
+import { checkRateLimit } from '@/lib/security';
 
 export function RegisterForm({ formData, errors, onChange, onSubmit, loading }) {
-  // ✨ FUNCIÓN SEGURA PARA MANEJAR CAMBIOS
+  /**
+   * handleSecureChange
+   * Limita la frecuencia de cambios en los inputs usando rate limiting.
+   * Previene spam y mejora la seguridad del formulario.
+   */
   const handleSecureChange = (e) => {
-    // Rate limiting para prevenir spam de input
+    // Permite máximo 50 cambios cada 10 segundos por input
     if (!checkRateLimit('register_input', 50, 10000)) {
       return;
-    }
-    
+    } 
     onChange(e);
   };
 
@@ -87,7 +95,7 @@ export function RegisterForm({ formData, errors, onChange, onSubmit, loading }) 
         />
         {errors.password && <Alert type="error">{errors.password}</Alert>}
         
-        {/* ✨ INDICADOR DE FORTALEZA DE CONTRASEÑA */}
+        {/* Indicador de fortaleza de contraseña */}
         {formData.password && (
           <div className="mt-2">
             <div className="text-xs text-gray-600 mb-1">Fortaleza de la contraseña:</div>

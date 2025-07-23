@@ -2,7 +2,7 @@ import React from 'react';
 import { Dropdown } from '@/components/ui/Dropdown';
 
 export const AuditTable = ({
-  logs, accionFilter, rolFilter, acciones, roles, onAccionChange, onRolChange,
+  logs, accionFilter, acciones, onAccionChange
 }) => (
   <div>
     <div className="mb-4 flex flex-wrap gap-4">

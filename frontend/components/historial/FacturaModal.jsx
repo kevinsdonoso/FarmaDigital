@@ -1,16 +1,23 @@
 'use client';
+/**
+ * Componente modal para mostrar el detalle de una factura.
+ * - Sanitiza todos los datos antes de mostrarlos para evitar XSS y errores.
+ * - El fondo es translúcido y el modal está centrado.
+ * - Incluye manejo seguro de cierre y validación de datos mínimos.
+ */
 import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { X } from 'lucide-react';
-
-// ✨ IMPORTS DE SEGURIDAD
+// Seguridad: Importa función para sanitizar datos
 import { sanitizeInput } from '@/lib/security';
 
 const FacturaModal = ({ factura, onClose }) => {
   if (!factura) return null;
-
-  // ✨ FUNCIÓN PARA SANITIZAR DATOS DE FACTURA
+  /**
+   * Sanitiza los datos de la factura antes de mostrarlos.
+   * Evita mostrar información corrupta o peligrosa.
+   */
   const sanitizeFacturaData = (facturaData) => {
     if (!facturaData) return null;
 
@@ -34,10 +41,10 @@ const FacturaModal = ({ factura, onClose }) => {
     };
   };
 
-  // ✨ DATOS SANITIZADOS
+  // Datos sanitizados para mostrar
   const facturaSanitizada = sanitizeFacturaData(factura);
 
-  // ✨ VALIDAR QUE TENGAMOS DATOS MÍNIMOS
+   // Validación de datos mínimos
   if (!facturaSanitizada || !facturaSanitizada.numeroFactura) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -63,7 +70,6 @@ const FacturaModal = ({ factura, onClose }) => {
         <div className="flex items-center justify-between p-6 border-b">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Detalle de Factura</h2>
-            {/* ✨ NÚMERO SANITIZADO */}
             <p className="text-lg text-gray-600">#{facturaSanitizada.numeroFactura}</p>
           </div>
           
@@ -85,7 +91,6 @@ const FacturaModal = ({ factura, onClose }) => {
               <div>
                 <p className="text-sm text-gray-500">Fecha de emisión</p>
                 <p className="font-medium">
-                  {/* ✨ FECHA SANITIZADA */}
                   {format(new Date(facturaSanitizada.fechaEmision), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: es })}
                 </p>
               </div>
@@ -98,7 +103,6 @@ const FacturaModal = ({ factura, onClose }) => {
                     ? 'bg-yellow-100 text-yellow-800'
                     : 'bg-gray-100 text-gray-800'
                 }`}>
-                  {/* ✨ ESTADO SANITIZADO */}
                   {facturaSanitizada.estado}
                 </span>
               </div>
@@ -107,13 +111,11 @@ const FacturaModal = ({ factura, onClose }) => {
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-gray-500">Cliente</p>
-                {/* ✨ NOMBRE SANITIZADO */}
                 <p className="font-medium">{facturaSanitizada.nombreCliente}</p>
               </div>
               {facturaSanitizada.emailCliente && (
                 <div>
                   <p className="text-sm text-gray-500">Email</p>
-                  {/* ✨ EMAIL SANITIZADO */}
                   <p className="font-medium">{facturaSanitizada.emailCliente}</p>
                 </div>
               )}
@@ -148,23 +150,19 @@ const FacturaModal = ({ factura, onClose }) => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {/* ✨ USAR DATOS SANITIZADOS */}
+                    {/*Usar datos sanitizados*/}
                     {facturaSanitizada.items.map((item, index) => (
                       <tr key={index} className="hover:bg-gray-50">
                         <td className="px-6 py-4 text-sm text-gray-900">
-                          {/* ✨ NOMBRE SANITIZADO */}
                           {item.nombreProducto}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900 text-center">
-                          {/* ✨ CANTIDAD SANITIZADA */}
                           {item.cantidad}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                          {/* ✨ PRECIO SANITIZADO */}
                           ${item.precioUnitario.toFixed(2)}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900 text-right font-medium">
-                          {/* ✨ SUBTOTAL SANITIZADO */}
                           ${item.subtotal.toFixed(2)}
                         </td>
                       </tr>
@@ -180,21 +178,18 @@ const FacturaModal = ({ factura, onClose }) => {
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Subtotal</span>
-                {/* ✨ SUBTOTAL SANITIZADO */}
                 <span className="font-medium">${facturaSanitizada.subtotal.toFixed(2)}</span>
               </div>
               
               {facturaSanitizada.impuestos > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Impuestos</span>
-                  {/* ✨ IMPUESTOS SANITIZADOS */}
                   <span className="font-medium">${facturaSanitizada.impuestos.toFixed(2)}</span>
                 </div>
               )}
               
               <div className="flex justify-between text-lg font-bold border-t pt-3">
                 <span>Total</span>
-                {/* ✨ TOTAL SANITIZADO */}
                 <span className="text-blue-600">${facturaSanitizada.total.toFixed(2)}</span>
               </div>
             </div>

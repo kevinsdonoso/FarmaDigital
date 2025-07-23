@@ -1,18 +1,32 @@
 'use client'
+/**
+ * Componente de tabla para mostrar productos con controles seguros de edición y eliminación.
+ * - Sanitiza todos los datos antes de mostrarlos o procesarlos.
+ * - Aplica rate limiting para prevenir spam y ataques automatizados.
+ * - Valida los datos antes de editar o eliminar.
+ * - El diseño es responsivo y accesible.
+ *
+ * Props:
+ * @param {Array} productos - Lista de productos a mostrar.
+ * @param {Function} onDeleteProduct - Handler para eliminar un producto.
+ * @param {Function} onEditProduct - Handler para actualizar la lista tras editar.
+ */
+
 import React, { useState } from 'react';
 import { Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { updateProducto } from '@/lib/api';
-
-// ✨ AGREGAR IMPORTS DE SEGURIDAD
+// Seguridad: Importa función para sanitizar datos
 import { sanitizeInput, checkRateLimit, validateUserInput } from '@/lib/security';
 
 export default function ProductTable({ productos, onDeleteProduct, onEditProduct }) {
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, producto: null });
   const [editModal, setEditModal] = useState({ isOpen: false, producto: null });
 
-  // ✨ FUNCIÓN SEGURA PARA SANITIZAR PRODUCTOS EN TABLA
+  /**
+  * Sanitiza los datos del producto antes de mostrar en la tabla.
+  */
   const sanitizeProductForDisplay = (producto) => {
     if (!producto) return null;
 
@@ -28,21 +42,22 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
     };
   };
 
-  // ✨ FUNCIÓN SEGURA PARA ELIMINAR
+  /**
+   * Abre el modal de eliminación de forma segura (rate limiting y sanitización).
+   */
   const handleDeleteClick = (producto) => {
-    // Rate limiting para abrir modal de eliminación
     if (!checkRateLimit(`open_delete_modal_${producto.idProducto}`, 5, 30000)) {
       console.warn('Rate limit excedido para abrir modal de eliminación');
       return;
     }
-
     const sanitizedProduct = sanitizeProductForDisplay(producto);
     setDeleteModal({ isOpen: true, producto: sanitizedProduct });
   };
 
-  // ✨ FUNCIÓN SEGURA PARA EDITAR
+  /**
+   * Abre el modal de edición de forma segura (rate limiting y sanitización).
+   */
   const handleEditClick = (producto) => {
-    // Rate limiting para abrir modal de edición
     if (!checkRateLimit(`open_edit_modal_${producto.idProducto}`, 5, 30000)) {
       console.warn('Rate limit excedido para abrir modal de edición');
       return;
@@ -52,12 +67,14 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
     setEditModal({ isOpen: true, producto: sanitizedProduct });
   };
 
-  // ✨ CONFIRMACIÓN SEGURA DE ELIMINACIÓN
+  /**
+   * Confirma la eliminación del producto validando el ID y sanitizando.
+   */
   const confirmDelete = () => {
     if (deleteModal.producto && deleteModal.producto.idProducto) {
       // Validar ID antes de eliminar
       const sanitizedId = sanitizeInput(deleteModal.producto.idProducto.toString());
-      
+
       if (!validateUserInput(sanitizedId, 'number')) {
         alert('ID de producto no válido para eliminación');
         return;
@@ -68,14 +85,15 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
     }
   };
 
-  // ✨ GUARDADO SEGURO DE EDICIÓN
+  /**
+   * Guarda los cambios de edición de forma segura (rate limiting, validación y sanitización).
+   */
   const handleEditSave = async (formData) => {
     if (!editModal.producto || !editModal.producto.idProducto) {
       alert('Error: Producto no válido para edición');
       return;
     }
 
-    // Rate limiting para guardar ediciones
     if (!checkRateLimit(`save_edit_${editModal.producto.idProducto}`, 3, 60000)) {
       alert('Demasiadas ediciones. Espera un momento.');
       return;
@@ -83,12 +101,12 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
 
     try {
       const productId = sanitizeInput(editModal.producto.idProducto.toString());
-      
+
       if (!validateUserInput(productId, 'number')) {
         throw new Error('ID de producto no válido');
       }
 
-      // ✨ SANITIZAR DATOS DEL FORMULARIO
+      //Sanitizar daots del formulario
       const sanitizedFormData = {
         nombre: sanitizeInput(formData.nombre || '').trim(),
         descripcion: sanitizeInput(formData.descripcion || '').trim(),
@@ -112,18 +130,13 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
         throw new Error('El precio debe ser mayor a 0');
       }
 
-      console.log('🔄 Editando producto ID:', productId, 'con datos sanitizados:', sanitizedFormData);
-      
       await updateProducto(productId, sanitizedFormData);
-      
-      console.log('✅ Producto actualizado exitosamente');
-      
+
       setEditModal({ isOpen: false, producto: null });
       if (onEditProduct) {
         onEditProduct();
       }
     } catch (error) {
-      console.error('❌ Error al actualizar producto:', error);
       alert('Error al actualizar producto: ' + sanitizeInput(error.message || 'Error desconocido'));
     }
   };
@@ -156,9 +169,8 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {productos.map((producto) => {
-              // ✨ SANITIZAR CADA PRODUCTO ANTES DE MOSTRAR
+              //agregamos los productos sanitizados 
               const productSafe = sanitizeProductForDisplay(producto);
-              
               return (
                 <tr key={productSafe.idProducto} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -166,13 +178,11 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
                       <Package className="h-8 w-8 text-gray-400 mr-3" />
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {/* ✨ NOMBRE SANITIZADO */}
                           {productSafe.nombre}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {/* ✨ DESCRIPCIÓN SANITIZADA Y TRUNCADA */}
-                          {productSafe.descripcion.length > 50 
-                            ? `${productSafe.descripcion.substring(0, 50)}...` 
+                          {productSafe.descripcion.length > 50
+                            ? `${productSafe.descripcion.substring(0, 50)}...`
                             : productSafe.descripcion
                           }
                         </div>
@@ -181,30 +191,24 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                      {/* ✨ CATEGORÍA SANITIZADA */}
                       {productSafe.categoria}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {/* ✨ PRECIO SANITIZADO */}
                     ${productSafe.precio.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`text-sm font-medium ${
-                      productSafe.stock > 10 ? 'text-green-600' : 
-                      productSafe.stock > 0 ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
-                      {/* ✨ STOCK SANITIZADO */}
+                    <span className={`text-sm font-medium ${productSafe.stock > 10 ? 'text-green-600' :
+                        productSafe.stock > 0 ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
                       {productSafe.stock} unidades
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      productSafe.es_sensible 
-                        ? 'bg-yellow-100 text-yellow-800' 
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${productSafe.es_sensible
+                        ? 'bg-yellow-100 text-yellow-800'
                         : 'bg-green-100 text-green-800'
-                    }`}>
-                      {/* ✨ ESTADO SANITIZADO */}
+                      }`}>
                       {productSafe.es_sensible ? 'Sensible' : 'Normal'}
                     </span>
                   </td>
@@ -272,7 +276,6 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
             </p>
             <div className="bg-gray-100 rounded-md p-3">
               <div className="text-sm">
-                {/* ✨ DATOS SANITIZADOS EN MODAL */}
                 <p><strong>Categoría:</strong> {deleteModal.producto?.categoria}</p>
                 <p><strong>Stock actual:</strong> {deleteModal.producto?.stock} unidades</p>
                 <p><strong>Precio:</strong> ${deleteModal.producto?.precio?.toFixed(2)}</p>
@@ -298,7 +301,7 @@ export default function ProductTable({ productos, onDeleteProduct, onEditProduct
   );
 }
 
-// ✨ COMPONENTE SEGURO PARA EDITAR PRODUCTO
+// Formulario de edicion
 const EditProductForm = ({ producto, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     nombre: producto?.nombre || '',
@@ -311,7 +314,7 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // ✨ VALIDACIÓN SEGURA DEL FORMULARIO
+  //validacion del formulario 
   const validateForm = () => {
     const newErrors = {};
 
@@ -336,10 +339,12 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✨ SUBMIT SEGURO
+  /**
+   * submit seguro
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
@@ -353,17 +358,17 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
     }
   };
 
-  // ✨ MANEJO SEGURO DE CAMBIOS
+  /**
+   * Maneja cambios 
+   */
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
     // Sanitizar valor de entrada
     const sanitizedValue = type === 'checkbox' ? checked : sanitizeInput(value);
-    
     // Límites de longitud
     if (name === 'nombre' && sanitizedValue.length > 100) return;
     if (name === 'descripcion' && sanitizedValue.length > 500) return;
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: sanitizedValue
@@ -389,9 +394,8 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
           onChange={handleChange}
           disabled={loading}
           maxLength={100}
-          className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${
-            errors.nombre ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${errors.nombre ? 'border-red-500' : 'border-gray-300'
+            }`}
           required
         />
         {errors.nombre && (
@@ -412,9 +416,8 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
           disabled={loading}
           rows={3}
           maxLength={500}
-          className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${
-            errors.descripcion ? 'border-red-500' : 'border-gray-300'
-          }`}
+          className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${errors.descripcion ? 'border-red-500' : 'border-gray-300'
+            }`}
           required
         />
         {errors.descripcion && (
@@ -438,9 +441,8 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
             step="0.01"
             min="0.01"
             max="999999"
-            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${
-              errors.precio ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${errors.precio ? 'border-red-500' : 'border-gray-300'
+              }`}
             required
           />
           {errors.precio && (
@@ -461,9 +463,8 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
             disabled={loading}
             min="0"
             max="999999"
-            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${
-              errors.stock ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent ${errors.stock ? 'border-red-500' : 'border-gray-300'
+              }`}
             required
           />
           {errors.stock && (
@@ -521,7 +522,7 @@ const EditProductForm = ({ producto, onSave, onCancel }) => {
         >
           Cancelar
         </Button>
-        <Button 
+        <Button
           type="submit"
           disabled={loading}
           className="flex items-center"
