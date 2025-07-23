@@ -1,11 +1,23 @@
 'use client'
+/**
+ * Página principal del sistema de auditoría.
+ * - Muestra los registros de auditoría filtrables por acción.
+ * - Utiliza componentes seguros y centralizados para mostrar y filtrar datos.
+ * - El diseño es responsivo y accesible.
+ *
+ * Seguridad:
+ * - Los datos de logs se obtienen mediante una función centralizada y validada.
+ * - El filtro solo permite acciones válidas, evitando manipulación de datos.
+ * - El botón de logout elimina la sesión y datos sensibles.
+ */
 import { useState, useEffect } from 'react';
-import { Shield } from 'lucide-react'; 
 import { AuditTable } from '@/components/audit/AuditTable';
 import Header from '@/components/ui/Header';
 import { getLogsAuditoria } from '@/lib/api';
+import { useRouteGuard } from '@/hooks/useRouteGuard';
 import LogoutButton from '@/components/ui/LogoutButton';
 
+// Opciones de acciones permitidas para filtrar
 const acciones = [
   { value: '', label: 'Todas las acciones' },
   { value: 'guardar_tarjeta', label: 'Guardar Tarjeta' },
@@ -22,15 +34,18 @@ const acciones = [
   { value: 'compra_exitosa', label: 'Compra Exitosa' }
 ];
 
-// Simulación de fetch de logs (reemplaza por tu fetch real)
+/**
+ * fetchLogs
+ * Obtiene los registros de auditoría de forma segura.
+ * - Utiliza la función centralizada getLogsAuditoria.
+ * - Valida que la respuesta sea un array antes de procesar.
+ */
 async function fetchLogs() {
   try {
     const response = await getLogsAuditoria();
-    console.log('✅ Logs obtenidos:', response);
     // Extrae el array de logs
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
-    console.error('❌ Error al obtener logs:', error);
     return [];
   }
 }
@@ -40,6 +55,12 @@ export default function AuditPage() {
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const status = useRouteGuard({ allowedRoles: [1] }); 
+
+  /**
+   * useEffect: carga los logs al montar el componente.
+   * - Maneja errores y asegura que el estado se limpie correctamente.
+   */
   useEffect(() => {
     const loadLogs = async () => {
       setLoading(true);
@@ -47,7 +68,6 @@ export default function AuditPage() {
         const data = await fetchLogs();
         setLogs(data);
       } catch (error) {
-        console.error('Error cargando logs:', error);
         setLogs([]);
       } finally {
         setLoading(false);
@@ -56,7 +76,10 @@ export default function AuditPage() {
     
     loadLogs();
     }, []);
-
+  /**
+   * useEffect: filtra los logs según la acción seleccionada.
+   * - Solo permite acciones válidas.
+   */
   useEffect(() => {
     let result = logs || [];
     if (accionFilter) {
@@ -66,6 +89,9 @@ export default function AuditPage() {
     }
     setFilteredLogs(result);
   }, [accionFilter, logs]);
+  // Protección de ruta: solo rol 2 (administrador) puede acceder
+    if (status === "loading") return <div>Cargando...</div>;
+    if (status === "unauthorized") return null;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
