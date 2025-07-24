@@ -33,6 +33,7 @@ export function LoginForm({ formData, errors, onChange, onSubmit, loading }) {
   return (
     <form onSubmit={onSubmit} className="space-y-6">   
       {/* DNI/Username */}
+      <div>
       <Input
           label="DNI"
           name="username"
