@@ -107,8 +107,8 @@ const handleSubmit = useCallback(async (submitFn, validateOnly = false) => {
   if (validateOnly) return true; 
 
   // Rate limiting para envíos
-  if (!checkRateLimit('form_submit', 3, 300000)) {
-    setErrors({ submit: 'Demasiados intentos de envío. Espera 5 minutos.' });
+  if (!checkRateLimit('form_submit', 3, 60000)) {
+    setErrors({ submit: 'Demasiados intentos de envío. Espera 1 minuto.' });
     setIsBlocked(true);
     setBlockTime(60000); // 5 minutos en ms
 

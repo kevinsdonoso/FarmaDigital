@@ -114,8 +114,8 @@ export default function TwoFactorContent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!checkRateLimit('2fa_attempt', 5, 300000)) {
-      setError('Demasiados intentos de verificación. Espera 5 minutos.');
+    if (!checkRateLimit('2fa_attempt', 5, 60000)) {
+      setError('Demasiados intentos de verificación. Espera 1 minuto.');
       return;
     }
 

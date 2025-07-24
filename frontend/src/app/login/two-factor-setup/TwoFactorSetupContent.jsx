@@ -124,8 +124,8 @@ export default function TwoFactorSetupContent() {
    * - Valida el código y limita los intentos.
    */
   const handleConfirm = async () => {
-    if (!checkRateLimit('2fa_setup_attempt', 5, 300000)) {
-      setError('Demasiados intentos de configuración. Espera 5 minutos.');
+    if (!checkRateLimit('2fa_setup_attempt', 5, 60000)) {
+      setError('Demasiados intentos de configuración. Espera 1 minuto.');
       return;
     }
 

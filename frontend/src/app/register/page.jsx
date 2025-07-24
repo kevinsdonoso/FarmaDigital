@@ -26,13 +26,14 @@ export default function RegisterPage() {
   
   // Reglas de validación seguras
   const validationRules = {
-    dni: { type: 'number', message: 'DNI debe tener 10 dígitos' },
+    dni: { regex: /^\d{10}$/, // exactamente 10 dígitos
+    message: 'El DNI debe tener exactamente 10 dígitos.'},
     nombre: { type: 'text', message: 'Nombre debe tener 2-50 caracteres, solo letras' },
     correo: { type: 'email', message: 'Correo electrónico no válido' },
     password: {
-      type: 'password',
-      message: 'Contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y símbolos'
-    },
+      regex: /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/,
+      message: 'La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, números y símbolos.'
+    },   
     confirmPassword: {
       type: 'password',
       message: 'Las contraseñas no coinciden'
@@ -70,10 +71,10 @@ export default function RegisterPage() {
     }
 
     // Rate limiting para registro
-    if (!checkRateLimit('register_attempt', 3, 600000)) {
+    if (!checkRateLimit('register_attempt', 3, 60000)) {
       setErrors(prev => ({
         ...prev,
-        submit: 'Demasiados intentos de registro. Espera 10 minutos.'
+        submit: 'Demasiados intentos de registro. Espera 1 minuto.'
       }));
       return;
     }

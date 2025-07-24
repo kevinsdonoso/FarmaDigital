@@ -37,10 +37,12 @@ export function RegisterForm({ formData, errors, onChange, onSubmit, loading }) 
         <Input
           label="DNI"
           name="dni"
-          type="number"
-          value={formData.dni}
+          type="text"
+          inputMode="numeric"
+          pattern="\d{10}"
+          value={formData.dni.replace(/\D/g, '').slice(0, 10)} 
           onChange={handleSecureChange}
-          placeholder="Ingresa tu DNI"
+          placeholder="Ingresa tu DNI (10 dígitos)"
           maxLength={10}
           icon={<FileText className="h-5 w-5" />}
           required

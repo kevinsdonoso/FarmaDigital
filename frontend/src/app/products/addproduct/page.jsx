@@ -87,8 +87,8 @@ export default function AddProduct() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     // Rate limiting para prevenir spam de creación
-    if (!checkRateLimit('add_product', 5, 300000)) {
-      alert('Demasiados productos creados. Espera 5 minutos.');
+    if (!checkRateLimit('add_product', 5, 60000)) {
+      alert('Demasiados productos creados. Espera 1 minuto.');
       return;
     }
     if (!validateForm()) return;

@@ -35,7 +35,6 @@ export function AuthProvider({ children }) {
           setUser(userInfo);
           setIsLoggedIn(true);
           
-          console.log('Usuario autenticado encontrado:', userInfo);
         } else {
           setUser(null);
           setIsLoggedIn(false);
