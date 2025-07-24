@@ -16,7 +16,7 @@ namespace FarmaDigitalBackend.Services
     {
         var ipAddress = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress;
 
-        // Si es IPv6 localhost, lo convertimos a IPv4
+
         if (ipAddress != null && ipAddress.Equals(IPAddress.IPv6Loopback))
             ipAddress = IPAddress.Loopback;
 
