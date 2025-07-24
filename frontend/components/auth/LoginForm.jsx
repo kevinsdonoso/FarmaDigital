@@ -33,14 +33,15 @@ export function LoginForm({ formData, errors, onChange, onSubmit, loading }) {
   return (
     <form onSubmit={onSubmit} className="space-y-6">   
       {/* DNI/Username */}
-      <div>
-        <Input
+      <Input
           label="DNI"
           name="username"
-          type="number"
-          value={formData.username}
+          type="text"
+          inputMode="numeric"
+          pattern="\d{10}"
+          value={formData.username.replace(/\D/g, '').slice(0, 10)} 
           onChange={handleSecureChange}
-          placeholder="Ingresa tu DNI o usuario"
+          placeholder="Ingresa tu DNI (10 dígitos)"
           maxLength={10}
           icon={<FileText className="h-5 w-5" />}
           required
